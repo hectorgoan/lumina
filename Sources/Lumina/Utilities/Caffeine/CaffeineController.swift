@@ -3,8 +3,9 @@ import Observation
 
 /// Keeps the Mac awake by holding a power management assertion while active.
 ///
-/// The assertion prevents idle system sleep; the display may still dim and
-/// sleep. macOS releases it automatically if Lumina quits.
+/// The assertion keeps the display awake, which also stops the screen saver
+/// from starting and keeps the system from idle sleep. macOS releases it
+/// automatically if Lumina quits.
 @MainActor
 @Observable
 final class CaffeineController {
@@ -22,7 +23,7 @@ final class CaffeineController {
 
     private func activate() {
         let result = IOPMAssertionCreateWithName(
-            kIOPMAssertionTypePreventUserIdleSystemSleep as CFString,
+            kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
             "Lumina Caffeine is keeping the Mac awake" as CFString,
             &assertionID

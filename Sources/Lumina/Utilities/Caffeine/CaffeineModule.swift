@@ -22,6 +22,6 @@ struct CaffeineModule: View {
             isOn: controller.isActive,
             action: controller.toggle
         )
-        .help(controller.isActive ? "Your Mac won’t go to sleep." : "Keep your Mac from going to sleep.")
+        .help(controller.isActive ? "Your Mac and its display won’t go to sleep." : "Keep your Mac and its display awake.")
     }
 }
