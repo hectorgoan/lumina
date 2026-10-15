@@ -15,6 +15,9 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Lumina" "$APP/Contents/MacOS/Lumina"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+# A fresh build number per build, so macOS caches (like Notification Center's
+# copy of the app icon) see each build as a new version.
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(date +%Y%m%d%H%M%S)" "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 codesign --force --sign - "$APP"
