@@ -18,22 +18,20 @@ struct BatteryWidgetSettings: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
 
-            Picker("Size", selection: Binding(
-                get: { widget.size },
-                set: { newSize in
-                    var updated = widget
-                    updated.size = newSize
-                    // Keep only as many chosen devices as the new size shows.
-                    updated.chosenDevices = Array(widget.chosenDevices.prefix(newSize.capacity))
-                    update(updated)
-                }
-            )) {
-                ForEach(BatteryWidget.Size.allCases) { size in
-                    Text(size.shortTitle).tag(size)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            FullWidthSegmentedPicker(
+                options: BatteryWidget.Size.allCases.map { ($0.shortTitle, $0) },
+                selection: Binding(
+                    get: { widget.size },
+                    set: { newSize in
+                        var updated = widget
+                        updated.size = newSize
+                        // Keep only as many chosen devices as the new size shows.
+                        updated.chosenDevices = Array(widget.chosenDevices.prefix(newSize.capacity))
+                        update(updated)
+                    }
+                )
+            )
+            .accessibilityLabel("Size")
 
             Divider()
 

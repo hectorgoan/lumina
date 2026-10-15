@@ -9,6 +9,15 @@ struct Utility: Identifiable {
     enum Size {
         case quarter, half, full
 
+        /// For example "Half width".
+        var title: String {
+            switch self {
+            case .quarter: "Quarter width"
+            case .half: "Half width"
+            case .full: "Full width"
+            }
+        }
+
         /// The number of grid columns (out of four) the module spans.
         var span: Int {
             switch self {

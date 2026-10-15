@@ -26,13 +26,11 @@ struct BatteryWidgetPicker: View {
             }
 
             // Short labels: the full names don't fit the panel's width.
-            Picker("Size", selection: $selection.size) {
-                ForEach(BatteryWidget.Size.allCases) { size in
-                    Text(size.shortTitle).tag(size)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            FullWidthSegmentedPicker(
+                options: BatteryWidget.Size.allCases.map { ($0.shortTitle, $0) },
+                selection: $selection.size
+            )
+            .accessibilityLabel("Size")
 
             preview
 

@@ -92,11 +92,23 @@ final class UtilityStore {
         hiddenIDs.contains(utility.id)
     }
 
-    /// Applies a new order, keeping hidden utilities after the visible ones.
-    func reorder(_ newOrder: [Utility]) {
-        let ordered = Self.partitioned(newOrder, hidden: hiddenIDs)
+    /// The utilities waiting in the library, in their saved order.
+    var hiddenUtilities: [Utility] {
+        utilities.filter { hiddenIDs.contains($0.id) }
+    }
+
+    /// Applies a new order of the visible utilities; hidden ones keep
+    /// theirs, after the visible ones.
+    func reorder(_ newVisibleOrder: [Utility]) {
+        let ordered = newVisibleOrder.filter { !hiddenIDs.contains($0.id) } + hiddenUtilities
         guard ordered.map(\.id) != utilities.map(\.id) else { return }
         utilities = ordered
+    }
+
+    /// Brings a utility from the library back to the end of the panel.
+    func show(_ utility: Utility) {
+        guard hiddenIDs.contains(utility.id) else { return }
+        toggleVisibility(of: utility)
     }
 
     /// Hiding moves a utility to the very bottom; showing it again places it
