@@ -33,10 +33,11 @@ struct ModuleTile<Content: View>: View {
     }
 }
 
-/// A circular toggle in the style of Control Center: tinted with the accent
-/// color when on, a translucent fill when off.
+/// A circular toggle in the style of Control Center: filled with its tint
+/// (the accent color by default) when on, a translucent fill when off.
 struct ModuleToggleButton: View {
     let symbol: String
+    var tint: Color = .accentColor
     let isOn: Bool
     let action: () -> Void
 
@@ -47,12 +48,41 @@ struct ModuleToggleButton: View {
                 .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
                 .frame(width: 30, height: 30)
                 .background {
-                    Circle().fill(isOn ? AnyShapeStyle(.tint) : AnyShapeStyle(.fill.secondary))
+                    Circle().fill(isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.fill.secondary))
                 }
                 .contentShape(Circle())
         }
         .buttonStyle(PressableButtonStyle())
         .animation(.snappy(duration: 0.2), value: isOn)
+    }
+}
+
+/// The layout for a half-width utility: a toggle with a title and status.
+struct CompactToggleModule: View {
+    let title: String
+    let status: String
+    let symbol: String
+    var tint: Color = .accentColor
+    let isOn: Bool
+    let action: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ModuleToggleButton(symbol: symbol, tint: tint, isOn: isOn, action: action)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(status)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.interpolate)
+            }
+            .lineLimit(1)
+
+            Spacer(minLength: 0)
+        }
+        .animation(.snappy(duration: 0.25), value: isOn)
     }
 }
 

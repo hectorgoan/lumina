@@ -6,6 +6,7 @@ A macOS menu bar app that hosts small utilities to help you focus, styled like a
 
 - **Appearance**: switch the system between Light and Dark mode.
 - **Caffeine**: keep your Mac from going to sleep while it's on.
+- **Stay Green**: keep chat apps like Microsoft Teams showing you as available while it's on. It tells macOS you're active every 30 seconds, without moving the pointer or needing extra permissions. Your display won't sleep while it's on.
 
 Click **Edit Utilities** at the bottom of the panel, then drag the modules to rearrange them. Lumina remembers the order.
 

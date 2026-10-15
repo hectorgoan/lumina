@@ -27,5 +27,6 @@ extension Utility {
     static let catalog: [Utility] = [
         .appearance,
         .caffeine,
+        .stayGreen,
     ]
 }
