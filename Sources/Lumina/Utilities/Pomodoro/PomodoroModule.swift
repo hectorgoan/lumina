@@ -6,8 +6,19 @@ extension Utility {
         name: "Pomodoro",
         symbol: "timer",
         size: .full,
-        content: { AnyView(PomodoroModule(controller: .shared)) }
+        content: { AnyView(PomodoroModule(controller: .shared)) },
+        settings: { AnyView(PomodoroSettings()) }
     )
+}
+
+/// Pomodoro preferences.
+struct PomodoroSettings: View {
+    var body: some View {
+        Text("Pomodoro settings are coming soon.")
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, minHeight: 60)
+    }
 }
 
 /// A Pomodoro timer with focus sessions, short breaks and long breaks.

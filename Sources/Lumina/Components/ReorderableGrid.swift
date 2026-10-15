@@ -25,14 +25,11 @@ struct ReorderableGrid<Item: Identifiable, Content: View>: View {
 
                 content(item, isLifted)
                     .onGeometryChange(for: CGFloat.self, of: \.size.height) { drag.heights[item.id] = $0 }
-                    .overlay {
-                        if isEditing {
-                            Color.clear
-                                .contentShape(Rectangle())
-                                .gesture(dragGesture(for: item.id))
-                                .pointerStyle(isLifted ? .grabActive : .grabIdle)
-                        }
-                    }
+                    // Attached to the tile itself so controls inside it
+                    // (like edit badges) stay clickable.
+                    .contentShape(Rectangle())
+                    .gesture(dragGesture(for: item.id), isEnabled: isEditing)
+                    .pointerStyle(isEditing ? (isLifted ? .grabActive : .grabIdle) : nil)
                     .offset(isLifted ? drag.offset : .zero)
                     .zIndex(isLifted ? 1 : 0)
                     // Keep the lifted tile pinned under the pointer instead of

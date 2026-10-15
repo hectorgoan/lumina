@@ -19,6 +19,8 @@ struct Utility: Identifiable {
     let symbol: String
     let size: Size
     let content: @MainActor () -> AnyView
+    /// The utility's settings page, if it has any.
+    var settings: (@MainActor () -> AnyView)? = nil
 }
 
 @MainActor

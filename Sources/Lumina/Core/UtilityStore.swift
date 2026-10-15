@@ -1,16 +1,29 @@
 import SwiftUI
 
-/// Owns the ordered list of utilities and the panel's edit state.
+/// Owns the ordered list of utilities, which ones are hidden, and the
+/// panel's edit state.
 @MainActor
 @Observable
 final class UtilityStore {
     private static let orderKey = "utilityOrder"
+    private static let hiddenKey = "hiddenUtilities"
 
-    var utilities: [Utility] {
+    /// Every utility in display order. Hidden utilities always come after
+    /// the visible ones.
+    private(set) var utilities: [Utility] {
         didSet { defaults.set(utilities.map(\.id), forKey: Self.orderKey) }
     }
 
-    var isEditing = false
+    private(set) var hiddenIDs: Set<String> {
+        didSet { defaults.set(Array(hiddenIDs), forKey: Self.hiddenKey) }
+    }
+
+    var isEditing = false {
+        didSet { if !isEditing { settingsUtilityID = nil } }
+    }
+
+    /// The utility whose settings page is open, if any.
+    var settingsUtilityID: String?
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -23,6 +36,48 @@ final class UtilityStore {
         let byID = Dictionary(uniqueKeysWithValues: catalog.map { ($0.id, $0) })
         let restored = savedOrder.compactMap { byID[$0] }
         let added = catalog.filter { !savedOrder.contains($0.id) }
-        utilities = restored + added
+
+        let hidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? []).intersection(byID.keys)
+        hiddenIDs = hidden
+        utilities = Self.partitioned(restored + added, hidden: hidden)
+    }
+
+    /// The utilities shown outside edit mode.
+    var visibleUtilities: [Utility] {
+        utilities.filter { !hiddenIDs.contains($0.id) }
+    }
+
+    var settingsUtility: Utility? {
+        utilities.first { $0.id == settingsUtilityID }
+    }
+
+    func isHidden(_ utility: Utility) -> Bool {
+        hiddenIDs.contains(utility.id)
+    }
+
+    /// Applies a new order, keeping hidden utilities after the visible ones.
+    func reorder(_ newOrder: [Utility]) {
+        let ordered = Self.partitioned(newOrder, hidden: hiddenIDs)
+        guard ordered.map(\.id) != utilities.map(\.id) else { return }
+        utilities = ordered
+    }
+
+    /// Hiding moves a utility to the very bottom; showing it again places it
+    /// right after the other visible ones.
+    func toggleVisibility(of utility: Utility) {
+        var others = utilities.filter { $0.id != utility.id }
+        if hiddenIDs.contains(utility.id) {
+            hiddenIDs.remove(utility.id)
+            let insertionIndex = others.firstIndex { hiddenIDs.contains($0.id) } ?? others.endIndex
+            others.insert(utility, at: insertionIndex)
+        } else {
+            hiddenIDs.insert(utility.id)
+            others.append(utility)
+        }
+        utilities = others
+    }
+
+    private static func partitioned(_ utilities: [Utility], hidden: Set<String>) -> [Utility] {
+        utilities.filter { !hidden.contains($0.id) } + utilities.filter { hidden.contains($0.id) }
     }
 }

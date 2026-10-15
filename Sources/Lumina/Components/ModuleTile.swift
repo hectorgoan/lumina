@@ -1,10 +1,13 @@
 import SwiftUI
 
 /// The rounded platter every utility sits on, mirroring Control Center modules.
-struct ModuleTile<Content: View>: View {
+struct ModuleTile<Content: View, Badges: View>: View {
     var isEditing: Bool
     var isLifted: Bool
+    var isHidden: Bool = false
     @ViewBuilder var content: Content
+    /// Controls pinned to the tile's top-right corner while editing.
+    @ViewBuilder var badges: Badges
 
     private let shape = RoundedRectangle(cornerRadius: 20, style: .continuous)
 
@@ -13,23 +16,47 @@ struct ModuleTile<Content: View>: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .allowsHitTesting(!isEditing)
-            .background(.fill.quaternary, in: shape)
+            .saturation(isHidden ? 0 : 1)
+            .opacity(isHidden ? 0.4 : 1)
+            .background(.fill.quaternary.opacity(isHidden ? 0.5 : 1), in: shape)
             .overlay {
                 shape.strokeBorder(.separator.opacity(isEditing ? 1 : 0.4), lineWidth: 0.5)
             }
             .overlay(alignment: .topTrailing) {
                 if isEditing {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 19)
-                        .padding(.trailing, 16)
-                        .transition(.opacity.combined(with: .scale(scale: 0.6)))
+                    badges
+                        .offset(x: 6, y: -6)
+                        .transition(.opacity.combined(with: .scale(scale: 0.5, anchor: .topTrailing)))
                 }
             }
             .scaleEffect(isLifted ? 1.03 : 1)
             .shadow(color: .black.opacity(isLifted ? 0.22 : 0), radius: 14, y: 8)
             .animation(.snappy(duration: 0.2), value: isLifted)
+            .animation(.snappy(duration: 0.25), value: isHidden)
+    }
+}
+
+/// A small round button shown on a tile's corner in edit mode.
+struct EditBadge: View {
+    let symbol: String
+    let help: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(.primary)
+                .frame(width: 20, height: 20)
+                .background(.regularMaterial, in: Circle())
+                .overlay { Circle().strokeBorder(.separator, lineWidth: 0.5) }
+                .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+                .contentShape(Circle())
+        }
+        .buttonStyle(PressableButtonStyle())
+        .pointerStyle(.default)
+        .help(help)
+        .accessibilityLabel(help)
     }
 }
 
