@@ -1,5 +1,5 @@
 // Draws Lumina's app icon (the menu bar's rays symbol on a gradient squircle)
-// and writes Resources/AppIcon.icns.
+// and writes Resources/AppIcon.icns, plus docs/icon.png for the README.
 // Usage: swift scripts/make-icon.swift
 import AppKit
 
@@ -71,3 +71,8 @@ iconutil.arguments = ["-c", "icns", iconset.path, "-o", output.path]
 try iconutil.run()
 iconutil.waitUntilExit()
 print("Wrote \(output.path)")
+
+let readmeIcon = root.appendingPathComponent("docs/icon.png")
+try FileManager.default.createDirectory(at: readmeIcon.deletingLastPathComponent(), withIntermediateDirectories: true)
+try renderIcon(pixels: 256).write(to: readmeIcon)
+print("Wrote \(readmeIcon.path)")

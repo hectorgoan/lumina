@@ -147,10 +147,7 @@ private struct PanelFooter: View {
             .controlSize(.large)
 
             Menu {
-                Button("About Lumina") {
-                    NSApp.activate()
-                    NSApp.orderFrontStandardAboutPanel()
-                }
+                Button("About Lumina", action: AboutPanel.show)
                 Divider()
                 Button("Quit Lumina") { NSApp.terminate(nil) }
                     .keyboardShortcut("q")

@@ -31,6 +31,6 @@
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Lumina uses System Events to switch between Light and Dark appearance.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Utilities to help you focus.</string>
+	<string>Copyright © 2026 Héctor Go. An. MIT License.</string>
 </dict>
 </plist>
