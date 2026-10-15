@@ -38,8 +38,12 @@ final class UpdateController: NSObject {
         }
     }
 
-    /// Checks now and shows Sparkle's window with the result.
+    /// Checks now and shows Sparkle's window with the result. If an update
+    /// was already found, this brings its window back.
     func checkForUpdates() {
+        // Lumina lives in the menu bar and isn't the active app, so without
+        // this Sparkle's window opens behind the user's other windows.
+        NSApp.activate()
         updaterController?.checkForUpdates(nil)
     }
 

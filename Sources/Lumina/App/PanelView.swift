@@ -12,6 +12,12 @@ struct PanelView: View {
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .trailing).combined(with: .opacity)
                     ))
+            } else if store.isAddingWorldClock {
+                WorldClockPicker()
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
             } else {
                 UtilityGrid()
                     .transition(.asymmetric(
@@ -74,6 +80,15 @@ private struct UtilityGrid: View {
                     badges(for: utility)
                 }
             }
+
+            if store.isEditing {
+                // Half width, like the clocks it adds.
+                HStack(spacing: 10) {
+                    AddWorldClockTile()
+                    Color.clear.frame(height: 1)
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
         }
     }
 
@@ -84,12 +99,18 @@ private struct UtilityGrid: View {
                     withAnimation(.snappy) { store.settingsUtilityID = utility.id }
                 }
             }
-            let isHidden = store.isHidden(utility)
-            EditBadge(
-                symbol: isHidden ? "eye.slash.fill" : "eye.fill",
-                help: isHidden ? "Show \(utility.name)" : "Hide \(utility.name)"
-            ) {
-                withAnimation(.snappy) { store.toggleVisibility(of: utility) }
+            if utility.isRemovable {
+                EditBadge(symbol: "minus", help: "Remove \(utility.name)") {
+                    withAnimation(.snappy) { store.remove(utility) }
+                }
+            } else {
+                let isHidden = store.isHidden(utility)
+                EditBadge(
+                    symbol: isHidden ? "eye.slash.fill" : "eye.fill",
+                    help: isHidden ? "Show \(utility.name)" : "Hide \(utility.name)"
+                ) {
+                    withAnimation(.snappy) { store.toggleVisibility(of: utility) }
+                }
             }
         }
     }
