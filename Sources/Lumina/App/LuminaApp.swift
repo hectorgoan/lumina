@@ -4,10 +4,15 @@ import UserNotifications
 @main
 struct LuminaApp: App {
     // Held directly: the app struct is created once for the process lifetime.
-    private let store = UtilityStore()
+    private let store: UtilityStore
+    private let worldClockMenuBar: WorldClockMenuBar
     private let notificationPresenter = NotificationPresenter()
 
     init() {
+        let store = UtilityStore()
+        self.store = store
+        worldClockMenuBar = WorldClockMenuBar(store: store)
+
         UNUserNotificationCenter.current().delegate = notificationPresenter
         // Start the updater at launch so its daily checks run even if the
         // panel is never opened.
