@@ -24,6 +24,11 @@ Requires macOS 26 or later.
 - **Pomodoro**: four 25-minute focus sessions with 5-minute breaks between them, then a 15-minute long break, repeated. You can change all three durations in its settings. Pause, skip or reset any step. Lumina chimes and posts a notification when a step ends and shows the countdown in the menu bar while a session is under way.
 - **Keyboard**: lock the keyboard so you can clean it. Every key, including media and brightness keys, is ignored until you click the tile again; the mouse and trackpad keep working. Needs Accessibility permission.
 - **Quit All**: quit every open app with one click, as if you pressed ⌘Q in each. Apps with unsaved changes still ask to save. In its settings, choose apps to keep open; Finder and Lumina are never quit.
+- **System**: CPU, memory, CPU temperature and fan speed as gauges, with load for each core, grouped into efficiency and performance cores. Two alternative layouts start hidden; show them in edit mode:
+  - **System List**: the same readings as rows with exact values, with the same per-core bars.
+  - **CPU Focus**: a compact take with a large CPU figure, its last minute as a graph, and the other readings as pills.
+
+  Temperature and fan speed come from the Mac's System Management Controller, which has no public API. Fan readings are hidden on Macs without fans.
 
 Click **Edit Utilities** at the bottom of the panel to customize it:
 
