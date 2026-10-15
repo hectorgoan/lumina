@@ -66,7 +66,7 @@ struct QuitAllSettings: View {
                                 .lineLimit(1)
                             Spacer()
                             Button {
-                                withAnimation(.snappy) { controller.stopKeeping(app.bundleID) }
+                                controller.stopKeeping(app.bundleID)
                             } label: {
                                 Image(systemName: "minus.circle.fill")
                                     .foregroundStyle(.secondary)
@@ -87,7 +87,7 @@ struct QuitAllSettings: View {
                         Section("Open Apps") {
                             ForEach(running) { app in
                                 Button {
-                                    withAnimation(.snappy) { controller.keep(app.bundleID) }
+                                    controller.keep(app.bundleID)
                                 } label: {
                                     Label { Text(app.name) } icon: { Image(nsImage: menuIcon(app.icon)) }
                                 }
@@ -105,7 +105,6 @@ struct QuitAllSettings: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        .animation(.snappy, value: controller.keptBundleIDs)
     }
 
     private func menuIcon(_ icon: NSImage) -> NSImage {

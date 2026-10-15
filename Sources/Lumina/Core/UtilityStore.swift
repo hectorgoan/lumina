@@ -28,15 +28,30 @@ final class UtilityStore {
         didSet { defaults.set(try? JSONEncoder().encode(batteryWidgets), forKey: Self.batteryWidgetsKey) }
     }
 
+    /// Edit mode as far as layout goes: it widens the panel for the
+    /// library, instantly.
     var isEditing = false {
         didSet {
             if !isEditing {
                 settingsUtilityID = nil
                 isAddingWorldClock = false
                 isAddingBatteryWidget = false
+                isLibraryPresented = false
+                isLibraryExpanded = false
             }
         }
     }
+
+    /// Whether the panel has made room for the library. It widens with
+    /// animation before the library fades in, and narrows after it fades out.
+    var isLibraryExpanded = false
+
+    /// Whether the library and the edit controls are shown. It changes with
+    /// animation just after the panel widens, and just before it narrows.
+    var isLibraryPresented = false
+
+    /// Whether tiles show their edit badges and can be dragged.
+    var showsEditControls: Bool { isEditing && isLibraryPresented }
 
     /// The utility whose settings page is open, if any.
     var settingsUtilityID: String?

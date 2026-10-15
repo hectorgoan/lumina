@@ -68,7 +68,6 @@ struct BatteryWidgetPicker: View {
         }
         .padding(10)
         .background(.fill.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .animation(.snappy, value: size)
     }
 
     /// Room for the widget, so the page doesn't jump between sizes.
@@ -81,11 +80,11 @@ struct BatteryWidgetPicker: View {
     }
 
     private func add() {
-        withAnimation(.snappy) { store.addBatteryWidget(size: selection.size) }
+        store.addBatteryWidget(size: selection.size)
     }
 
     private func close() {
-        withAnimation(.snappy) { store.isAddingBatteryWidget = false }
+        store.isAddingBatteryWidget = false
     }
 }
 

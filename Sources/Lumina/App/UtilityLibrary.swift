@@ -24,7 +24,7 @@ struct UtilityLibrary: View {
                     }
                     ForEach(hidden, id: \.id) { utility in
                         LibraryRow(symbol: utility.symbol, title: utility.name, detail: utility.size.title) {
-                            withAnimation(.snappy) { store.show(utility) }
+                            store.show(utility)
                         }
                         .draggable(LibraryDrag.utility(utility.id))
                     }
@@ -34,7 +34,7 @@ struct UtilityLibrary: View {
                     }
                     ForEach(newItems, id: \.self) { item in
                         LibraryRow(symbol: item.symbol, title: item.title, detail: item.detail) {
-                            withAnimation(.snappy) { open(item) }
+                            open(item)
                         }
                         .draggable(LibraryDrag.new(item))
                     }

@@ -133,7 +133,6 @@ struct BatteryWidgetContent: View {
                 }
             }
         }
-        .animation(.smooth, value: devices)
     }
 
     private var rings: some View {

@@ -20,14 +20,20 @@ struct ModuleTile<Content: View, Badges: View>: View {
                 shape.strokeBorder(.separator.opacity(isEditing ? 1 : 0.4), lineWidth: 0.5)
             }
             .overlay(alignment: .topTrailing) {
+                // Animates with whatever brings edit mode in or out, so the
+                // badges move together with the library.
                 if isEditing {
                     badges
+                        .fadesWithoutColorShift()
                         .offset(x: 6, y: -6)
-                        .transition(.opacity.combined(with: .scale(scale: 0.5, anchor: .topTrailing)))
+                        .transition(.opacity)
                 }
             }
             .scaleEffect(isLifted ? 1.03 : 1)
-            .shadow(color: .black.opacity(isLifted ? 0.22 : 0), radius: 14, y: 8)
+            // Only a lifted tile casts a shadow. A blurred shadow is drawn
+            // offscreen for the whole tile, so leaving it on at zero opacity
+            // made every tile pay for it on every redraw.
+            .shadow(color: .black.opacity(isLifted ? 0.22 : 0), radius: isLifted ? 14 : 0, y: isLifted ? 8 : 0)
             .animation(.snappy(duration: 0.2), value: isLifted)
     }
 }
@@ -44,9 +50,10 @@ struct EditBadge: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(.primary)
                 .frame(width: 20, height: 20)
-                .background(.regularMaterial, in: Circle())
+                // A solid fill rather than a material: edit mode shows a
+                // couple of badges per tile, and live blurs add up.
+                .background(Color(nsColor: .controlBackgroundColor), in: Circle())
                 .overlay { Circle().strokeBorder(.separator, lineWidth: 0.5) }
-                .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
                 .contentShape(Circle())
         }
         .buttonStyle(PressableButtonStyle())

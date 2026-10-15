@@ -60,7 +60,6 @@ struct BatteryWidgetSettings: View {
                 }
             }
         }
-        .animation(.snappy, value: widget)
     }
 
     // MARK: - Device list
@@ -94,6 +93,8 @@ struct BatteryWidgetSettings: View {
                 Image(systemName: isChosen && !widget.choosesAutomatically ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 15))
                     .foregroundStyle(isChosen && !widget.choosesAutomatically ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
+                    .contentTransition(.symbolEffect(.replace))
+                    .animation(.snappy(duration: 0.2), value: isChosen)
                 Image(systemName: row.symbol)
                     .font(.system(size: 12, weight: .medium))
                     .frame(width: 18)
@@ -134,6 +135,6 @@ struct BatteryWidgetSettings: View {
     }
 
     private func update(_ widget: BatteryWidget) {
-        withAnimation(.snappy) { store.updateBatteryWidget(widget) }
+        store.updateBatteryWidget(widget)
     }
 }

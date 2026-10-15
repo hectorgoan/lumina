@@ -184,5 +184,7 @@ private struct AppearancePreview: View {
         }
         .clipShape(shape)
         .overlay { shape.strokeBorder(.black.opacity(0.12), lineWidth: 0.5) }
+        // Static artwork: flatten its gradients and shadow into one layer.
+        .drawingGroup()
     }
 }

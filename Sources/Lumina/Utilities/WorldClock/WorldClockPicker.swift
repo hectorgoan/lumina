@@ -109,11 +109,11 @@ struct WorldClockPicker: View {
     }
 
     private func add(_ city: WorldClockCity) {
-        withAnimation(.snappy) { store.addWorldClock(for: city) }
+        store.addWorldClock(for: city)
     }
 
     private func close() {
-        withAnimation(.snappy) { store.isAddingWorldClock = false }
+        store.isAddingWorldClock = false
     }
 }
 

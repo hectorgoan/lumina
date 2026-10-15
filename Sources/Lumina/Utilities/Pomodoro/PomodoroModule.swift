@@ -119,6 +119,8 @@ struct PomodoroModule: View {
                     .font(.system(size: 30, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .contentTransition(.numericText(countsDown: true))
+                    // Scoped to the digits: the countdown ticks every second.
+                    .animation(.snappy(duration: 0.3), value: controller.formattedRemaining)
                     .foregroundStyle(controller.isRunning ? .primary : .secondary)
 
                 Spacer()
@@ -136,7 +138,6 @@ struct PomodoroModule: View {
         }
         .animation(.snappy(duration: 0.25), value: controller.phase)
         .animation(.snappy(duration: 0.25), value: controller.isRunning)
-        .animation(.snappy(duration: 0.3), value: controller.formattedRemaining)
     }
 
     private var statusText: String {
