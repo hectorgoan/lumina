@@ -4,10 +4,10 @@ import Sparkle
 
 /// Keeps Lumina up to date with Sparkle.
 ///
-/// Sparkle checks the release feed once a day. Instead of interrupting with
-/// its own window, a scheduled check that finds an update shows a banner in
-/// the panel; choosing Update there hands over to Sparkle, which downloads,
-/// verifies and installs the update and relaunches Lumina.
+/// Sparkle checks the release feed at launch and every six hours. Instead of
+/// interrupting with its own window, a background check that finds an update
+/// shows a banner in the panel; choosing Update there hands over to Sparkle,
+/// which downloads, verifies and installs the update and relaunches Lumina.
 @MainActor
 @Observable
 final class UpdateController: NSObject {
@@ -32,6 +32,15 @@ final class UpdateController: NSObject {
             userDriverDelegate: self
         )
         updaterController = controller
+
+        // Sparkle's schedule alone skips launches within the check interval,
+        // so a release published since the last check would go unnoticed
+        // until the next one. Check quietly at launch too, as Sparkle's
+        // documentation recommends: right after starting the updater, and
+        // only when automatic checks are on.
+        if controller.updater.automaticallyChecksForUpdates {
+            controller.updater.checkForUpdatesInBackground()
+        }
         canCheckObservation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
             // Sparkle reports changes on the main thread.
             MainActor.assumeIsolated { self?.canCheckForUpdates = updater.canCheckForUpdates }
