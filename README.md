@@ -32,12 +32,16 @@ Requires macOS 26 or later.
 
   Temperature and fan speed come from the Mac's System Management Controller, which has no public API. Fan readings are hidden on Macs without fans.
 - **World Clock**: a half-width card per city with its flag, city code (MAD, NYC, TYO…), current time, day and night, and how far ahead or behind it is. Add as many as you like from edit mode. In a clock's settings (the gear badge), choose to show it in the menu bar too, as its own item with just the time or with the city code as well. Click a clock in the menu bar to see its day and offset, or to hide it.
+- **Batteries**: the charge of your Mac and its Bluetooth accessories (AirPods and their case, keyboards, mice, trackpads), the same devices macOS's own Batteries widget lists. Comes in four sizes: Small (1 device), Medium (2), Large (4) and Extra Large (a list of 6). By default it shows the devices with the lowest charge first; in its settings, change the size or choose devices yourself. Devices appear as they connect.
+
+  The Mac's battery comes from a public API. Accessory levels come from `IOPSCopyPowerSourcesByType`, which IOKit exports but doesn't declare publicly.
 
 Click **Edit Utilities** at the bottom of the panel to customize it:
 
 - Drag the modules to rearrange them.
 - Click the eye badge on a module to hide or show it. Hidden modules move to the bottom and only appear, dimmed, while editing.
 - Click the gear badge to open a utility's settings, for utilities that have them.
+- Click **+ Batteries** to add a battery widget: pick a size and see it with your devices before adding it.
 - Click **+ World Clock** to pick a city and add a clock for it. Search by city, country or code; use the arrow keys and Return, or click. Clocks show a remove badge (−) instead of the eye.
 
 Lumina remembers your layout.
