@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// Owns the ordered list of utilities, which ones are hidden, and the
-/// panel's edit state.
+/// Owns the ordered list of utilities, which ones are hidden, the world
+/// clocks the user added, and the panel's edit state.
 @MainActor
 @Observable
 final class UtilityStore {
     private static let orderKey = "utilityOrder"
     private static let hiddenKey = "hiddenUtilities"
+    private static let worldClocksKey = "worldClocks"
 
     /// Every utility in display order. Hidden utilities always come after
     /// the visible ones.
@@ -18,12 +19,24 @@ final class UtilityStore {
         didSet { defaults.set(Array(hiddenIDs), forKey: Self.hiddenKey) }
     }
 
+    private(set) var worldClocks: [WorldClock] {
+        didSet { defaults.set(try? JSONEncoder().encode(worldClocks), forKey: Self.worldClocksKey) }
+    }
+
     var isEditing = false {
-        didSet { if !isEditing { settingsUtilityID = nil } }
+        didSet {
+            if !isEditing {
+                settingsUtilityID = nil
+                isAddingWorldClock = false
+            }
+        }
     }
 
     /// The utility whose settings page is open, if any.
     var settingsUtilityID: String?
+
+    /// Whether the world clock city picker is open.
+    var isAddingWorldClock = false
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -33,10 +46,15 @@ final class UtilityStore {
         // Restore the saved order, dropping utilities that no longer exist and
         // appending newly added ones at the end. Newly added utilities that
         // are hidden by default start out hidden.
+        let clocks = defaults.data(forKey: Self.worldClocksKey)
+            .flatMap { try? JSONDecoder().decode([WorldClock].self, from: $0) } ?? []
+        worldClocks = clocks
+        let all = catalog + clocks.compactMap(Utility.worldClock)
+
         let savedOrder = defaults.stringArray(forKey: Self.orderKey) ?? []
-        let byID = Dictionary(uniqueKeysWithValues: catalog.map { ($0.id, $0) })
+        let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
         let restored = savedOrder.compactMap { byID[$0] }
-        let added = catalog.filter { !savedOrder.contains($0.id) }
+        let added = all.filter { !savedOrder.contains($0.id) }
 
         let savedHidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? []).intersection(byID.keys)
         let hidden = savedHidden.union(added.filter(\.isHiddenByDefault).map(\.id))
@@ -82,6 +100,38 @@ final class UtilityStore {
             others.append(utility)
         }
         utilities = others
+    }
+
+    // MARK: - World clocks
+
+    /// Adds a clock for the city after the visible utilities and closes the
+    /// picker.
+    func addWorldClock(for city: WorldClockCity) {
+        let clock = WorldClock(id: "worldClock-\(UUID().uuidString)", cityCode: city.code)
+        guard let utility = Utility.worldClock(clock) else { return }
+        worldClocks.append(clock)
+        var updated = utilities
+        let insertionIndex = updated.firstIndex { hiddenIDs.contains($0.id) } ?? updated.endIndex
+        updated.insert(utility, at: insertionIndex)
+        utilities = updated
+        isAddingWorldClock = false
+    }
+
+    func worldClock(withID id: String) -> WorldClock? {
+        worldClocks.first { $0.id == id }
+    }
+
+    func setMenuBarDisplay(_ display: WorldClock.MenuBarDisplay, forClockWithID id: String) {
+        guard let index = worldClocks.firstIndex(where: { $0.id == id }) else { return }
+        worldClocks[index].menuBar = display
+    }
+
+    /// Removes a utility the user added, such as a world clock.
+    func remove(_ utility: Utility) {
+        guard utility.isRemovable else { return }
+        worldClocks.removeAll { $0.id == utility.id }
+        hiddenIDs.remove(utility.id)
+        utilities.removeAll { $0.id == utility.id }
     }
 
     private static func partitioned(_ utilities: [Utility], hidden: Set<String>) -> [Utility] {
