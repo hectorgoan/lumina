@@ -31,5 +31,6 @@ extension Utility {
         .caffeine,
         .stayGreen,
         .pomodoro,
+        .keyboardLock,
     ]
 }
