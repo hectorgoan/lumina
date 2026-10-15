@@ -69,15 +69,17 @@ private struct UtilityGrid: View {
                 UpdateBanner(version: version, updates: updates)
             }
 
-            if store.isEditing {
-                // Takes its space with the panel's layout, but fades with the
-                // library, so the grid doesn't jump when edit mode ends.
+            if store.isLibraryExpanded {
+                // Its space opens and closes with the panel's resize, so the
+                // utilities glide down and back up; the text itself fades with
+                // the library.
                 Text("Drag to rearrange. Hidden utilities wait in the Library.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .fadesWithoutColorShift()
                     .opacity(store.isLibraryPresented ? 1 : 0)
+                    .transition(.identity)
             }
 
             if store.visibleUtilities.isEmpty {
