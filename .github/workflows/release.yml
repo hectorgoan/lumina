@@ -1,0 +1,128 @@
+# Builds Lumina on every push to main (merged pull requests) and publishes a
+# GitHub Release with the zipped app and a Sparkle update feed (appcast.xml).
+#
+# Secrets (set them with scripts/setup-release-secrets.sh):
+#   SPARKLE_PRIVATE_KEY    EdDSA key that signs updates. Required.
+#   LUMINA_CERT_P12        Base64 "Lumina Development" certificate and key.
+#   LUMINA_CERT_PASSWORD   Password of that .p12.
+# Without the certificate the app is signed ad hoc, so macOS asks users for
+# Lumina's permissions again after every update.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  # Keep in sync with the Sparkle version pinned in Package.swift.
+  SPARKLE_VERSION: 2.9.6
+
+jobs:
+  release:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check release configuration
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          key="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' Resources/Info.plist)"
+          if [[ "$key" == REPLACE_* ]]; then
+            echo "::error::SUPublicEDKey isn't set. Run scripts/setup-release-secrets.sh and commit Resources/Info.plist."
+            exit 1
+          fi
+          if [ -z "$SPARKLE_PRIVATE_KEY" ]; then
+            echo "::error::The SPARKLE_PRIVATE_KEY secret is missing. Run scripts/setup-release-secrets.sh."
+            exit 1
+          fi
+
+      - name: Choose version
+        id: version
+        run: |
+          # major.minor comes from Info.plist; the patch is this workflow's run number.
+          base="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
+          version="$(echo "$base" | cut -d. -f1,2).${{ github.run_number }}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing Lumina $version"
+
+      - name: Import signing certificate
+        env:
+          LUMINA_CERT_P12: ${{ secrets.LUMINA_CERT_P12 }}
+          LUMINA_CERT_PASSWORD: ${{ secrets.LUMINA_CERT_PASSWORD }}
+        run: |
+          if [ -z "$LUMINA_CERT_P12" ]; then
+            echo "::warning::No LUMINA_CERT_P12 secret; the app will be signed ad hoc."
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -hex 16)"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          echo "$LUMINA_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$LUMINA_CERT_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+
+      - name: Build
+        env:
+          LUMINA_VERSION: ${{ steps.version.outputs.version }}
+        run: scripts/build-app.sh release
+
+      - name: Package
+        run: ditto -c -k --sequesterRsrc --keepParent build/Lumina.app Lumina.zip
+
+      - name: Create update feed
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/sparkle"
+          curl -sSL "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-$SPARKLE_VERSION.tar.xz" \
+            | tar -xJ -C "$RUNNER_TEMP/sparkle"
+
+          # Prints: sparkle:edSignature="…" length="…"
+          signature="$(echo "$SPARKLE_PRIVATE_KEY" | "$RUNNER_TEMP/sparkle/bin/sign_update" --ed-key-file - Lumina.zip)"
+          build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' build/Lumina.app/Contents/Info.plist)"
+          minimum="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' build/Lumina.app/Contents/Info.plist)"
+          repo="https://github.com/${{ github.repository }}"
+
+          cat > appcast.xml <<XML
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>Lumina</title>
+              <link>$repo</link>
+              <item>
+                <title>Lumina $VERSION</title>
+                <link>$repo/releases/tag/v$VERSION</link>
+                <pubDate>$(date -R)</pubDate>
+                <sparkle:version>$build</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>$minimum</sparkle:minimumSystemVersion>
+                <enclosure url="$repo/releases/download/v$VERSION/Lumina.zip" type="application/octet-stream" $signature />
+              </item>
+            </channel>
+          </rss>
+          XML
+          cat appcast.xml
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" Lumina.zip appcast.xml \
+            --target "$GITHUB_SHA" \
+            --title "Lumina $VERSION" \
+            --generate-notes
