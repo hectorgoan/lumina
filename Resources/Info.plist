@@ -8,6 +8,8 @@
 	<string>Lumina</string>
 	<key>CFBundleExecutable</key>
 	<string>Lumina</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>app.lumina.Lumina</string>
 	<key>CFBundleInfoDictionaryVersion</key>

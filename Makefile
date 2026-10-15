@@ -8,6 +8,7 @@ app:
 
 run: app
 	-pkill -x Lumina
+	@while pgrep -x Lumina >/dev/null; do sleep 0.1; done
 	open build/Lumina.app
 
 clean:

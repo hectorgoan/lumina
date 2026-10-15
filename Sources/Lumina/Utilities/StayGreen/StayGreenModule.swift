@@ -19,7 +19,7 @@ struct StayGreenModule: View {
             title: "Stay Green",
             status: controller.isActive ? "Available" : "Off",
             symbol: "person.crop.circle.badge.checkmark",
-            tint: .green,
+            tint: .luminaGreen,
             isOn: controller.isActive,
             action: controller.toggle
         )

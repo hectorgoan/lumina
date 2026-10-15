@@ -28,5 +28,6 @@ extension Utility {
         .appearance,
         .caffeine,
         .stayGreen,
+        .pomodoro,
     ]
 }

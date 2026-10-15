@@ -67,7 +67,7 @@ struct CompactToggleModule: View {
     let action: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             ModuleToggleButton(symbol: symbol, tint: tint, isOn: isOn, action: action)
 
             VStack(alignment: .leading, spacing: 1) {
@@ -79,6 +79,7 @@ struct CompactToggleModule: View {
                     .contentTransition(.interpolate)
             }
             .lineLimit(1)
+            .minimumScaleFactor(0.85)
 
             Spacer(minLength: 0)
         }
@@ -94,4 +95,9 @@ struct PressableButtonStyle: ButtonStyle {
             .opacity(configuration.isPressed ? 0.85 : 1)
             .animation(.snappy(duration: 0.15), value: configuration.isPressed)
     }
+}
+
+extension Color {
+    /// A calmer green than the system one, for "on" states that shouldn't shout.
+    static let luminaGreen = Color(red: 0.24, green: 0.66, blue: 0.40)
 }
