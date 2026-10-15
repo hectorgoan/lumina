@@ -5,6 +5,7 @@ A macOS menu bar app that hosts small utilities to help you focus, styled like a
 ## Utilities
 
 - **Appearance**: switch the system between Light and Dark mode.
+- **Caffeine**: keep your Mac from going to sleep while it's on.
 
 Click **Edit Utilities** at the bottom of the panel, then drag the modules to rearrange them. Lumina remembers the order.
 
@@ -23,7 +24,7 @@ The first time you switch appearance, macOS asks for permission to let Lumina co
 ## Adding a utility
 
 1. Create a module view under `Sources/Lumina/Utilities/<Name>/`.
-2. Add a `static let` `Utility` for it (see `AppearanceModule.swift`).
+2. Add a `static let` `Utility` for it, choosing a `.full` or `.half` size (see `AppearanceModule.swift`).
 3. Register it in `Utility.catalog`.
 
 New utilities go to the end of the user's saved order.

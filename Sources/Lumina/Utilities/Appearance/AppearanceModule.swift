@@ -5,6 +5,7 @@ extension Utility {
         id: "appearance",
         name: "Appearance",
         symbol: "circle.lefthalf.filled",
+        size: .full,
         content: { AnyView(AppearanceModule(controller: .shared)) }
     )
 }

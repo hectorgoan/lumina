@@ -16,7 +16,12 @@ struct PanelView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
-            ReorderableStack(items: $store.utilities, isEditing: store.isEditing, spacing: 10) { utility, isLifted in
+            ReorderableGrid(
+                items: $store.utilities,
+                isEditing: store.isEditing,
+                spacing: 10,
+                span: \.size.span
+            ) { utility, isLifted in
                 ModuleTile(isEditing: store.isEditing, isLifted: isLifted) {
                     utility.content()
                 }
