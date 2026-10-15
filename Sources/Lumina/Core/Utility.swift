@@ -27,6 +27,9 @@ struct Utility: Identifiable {
     let content: @MainActor () -> AnyView
     /// The utility's settings page, if it has any.
     var settings: (@MainActor () -> AnyView)? = nil
+    /// Whether the utility starts out hidden, for alternatives users can
+    /// switch on in edit mode.
+    var isHiddenByDefault = false
 }
 
 @MainActor
@@ -39,5 +42,8 @@ extension Utility {
         .pomodoro,
         .keyboardLock,
         .quitAll,
+        .systemStatus,
+        .systemList,
+        .cpuFocus,
     ]
 }

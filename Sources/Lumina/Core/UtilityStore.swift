@@ -31,15 +31,22 @@ final class UtilityStore {
         self.defaults = defaults
 
         // Restore the saved order, dropping utilities that no longer exist and
-        // appending newly added ones at the end.
+        // appending newly added ones at the end. Newly added utilities that
+        // are hidden by default start out hidden.
         let savedOrder = defaults.stringArray(forKey: Self.orderKey) ?? []
         let byID = Dictionary(uniqueKeysWithValues: catalog.map { ($0.id, $0) })
         let restored = savedOrder.compactMap { byID[$0] }
         let added = catalog.filter { !savedOrder.contains($0.id) }
 
-        let hidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? []).intersection(byID.keys)
+        let savedHidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? []).intersection(byID.keys)
+        let hidden = savedHidden.union(added.filter(\.isHiddenByDefault).map(\.id))
         hiddenIDs = hidden
         utilities = Self.partitioned(restored + added, hidden: hidden)
+
+        // Save right away, so utilities hidden by default stay as the user
+        // leaves them on later launches.
+        defaults.set(utilities.map(\.id), forKey: Self.orderKey)
+        defaults.set(Array(hidden), forKey: Self.hiddenKey)
     }
 
     /// The utilities shown outside edit mode.
