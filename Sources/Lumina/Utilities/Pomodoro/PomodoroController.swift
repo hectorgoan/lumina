@@ -10,11 +10,29 @@ final class PomodoroController {
     enum Phase {
         case focus, shortBreak, longBreak
 
-        var duration: TimeInterval {
+        /// The default length, in minutes.
+        var defaultMinutes: Int {
             switch self {
-            case .focus: 25 * 60
-            case .shortBreak: 5 * 60
-            case .longBreak: 15 * 60
+            case .focus: 25
+            case .shortBreak: 5
+            case .longBreak: 15
+            }
+        }
+
+        /// The lengths the user can choose, in minutes.
+        var minuteRange: ClosedRange<Int> {
+            switch self {
+            case .focus: 5...90
+            case .shortBreak: 1...30
+            case .longBreak: 5...60
+            }
+        }
+
+        fileprivate var defaultsKey: String {
+            switch self {
+            case .focus: "pomodoro.focusMinutes"
+            case .shortBreak: "pomodoro.shortBreakMinutes"
+            case .longBreak: "pomodoro.longBreakMinutes"
             }
         }
 
@@ -35,23 +53,66 @@ final class PomodoroController {
     private(set) var phase: Phase = .focus
     /// Focus sessions finished in the current cycle.
     private(set) var completedSessions = 0
-    private(set) var remaining: TimeInterval = Phase.focus.duration
+    private(set) var remaining: TimeInterval = 0
     private(set) var isRunning = false
+    /// The full length of the current step, fixed when the step starts.
+    private(set) var currentDuration: TimeInterval = 0
+
+    /// Step lengths in minutes, as chosen in settings.
+    private(set) var minutes: [Phase: Int]
 
     @ObservationIgnored private var endDate: Date?
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var hasRequestedNotifications = false
+    @ObservationIgnored private let defaults = UserDefaults.standard
 
-    private init() {}
+    private init() {
+        var minutes: [Phase: Int] = [:]
+        for phase in [Phase.focus, .shortBreak, .longBreak] {
+            let saved = defaults.integer(forKey: phase.defaultsKey)
+            minutes[phase] = phase.minuteRange.contains(saved) ? saved : phase.defaultMinutes
+        }
+        self.minutes = minutes
+        currentDuration = duration(of: .focus)
+        remaining = currentDuration
+    }
+
+    func duration(of phase: Phase) -> TimeInterval {
+        TimeInterval(minutes[phase] ?? phase.defaultMinutes) * 60
+    }
+
+    func minutes(for phase: Phase) -> Int {
+        minutes[phase] ?? phase.defaultMinutes
+    }
+
+    /// Changes a step's length. A step that hasn't started yet picks up the
+    /// new length right away; one under way keeps its length until it ends.
+    func setMinutes(_ value: Int, for phase: Phase) {
+        let value = min(max(value, phase.minuteRange.lowerBound), phase.minuteRange.upperBound)
+        guard value != minutes(for: phase) else { return }
+        let isUntouched = phase == self.phase && !isRunning && remaining == currentDuration
+        minutes[phase] = value
+        defaults.set(value, forKey: phase.defaultsKey)
+        if isUntouched {
+            currentDuration = duration(of: phase)
+            remaining = currentDuration
+        }
+    }
+
+    func restoreDefaultDurations() {
+        for phase in [Phase.focus, .shortBreak, .longBreak] {
+            setMinutes(phase.defaultMinutes, for: phase)
+        }
+    }
 
     /// Whether a session is under way, running or paused.
     var isInProgress: Bool {
-        isRunning || remaining < phase.duration || completedSessions > 0 || phase != .focus
+        isRunning || remaining < currentDuration || completedSessions > 0 || phase != .focus
     }
 
     /// How much of the current step has elapsed, from 0 to 1.
     var progress: Double {
-        1 - remaining / phase.duration
+        currentDuration > 0 ? 1 - remaining / currentDuration : 0
     }
 
     /// The remaining time as `mm:ss`.
@@ -91,7 +152,8 @@ final class PomodoroController {
         pause()
         phase = .focus
         completedSessions = 0
-        remaining = phase.duration
+        currentDuration = duration(of: phase)
+        remaining = currentDuration
     }
 
     // MARK: - Timing
@@ -122,7 +184,8 @@ final class PomodoroController {
             completedSessions = 0
             phase = .focus
         }
-        remaining = phase.duration
+        currentDuration = duration(of: phase)
+        remaining = currentDuration
         if isRunning {
             endDate = .now.addingTimeInterval(remaining)
         }
@@ -145,11 +208,11 @@ final class PomodoroController {
             let isLast = completedSessions + 1 >= Self.sessionsPerCycle
             content.title = "Focus session complete"
             content.body = isLast
-                ? "Great work. Take a \(Int(Phase.longBreak.duration / 60))-minute break."
-                : "Take a \(Int(Phase.shortBreak.duration / 60))-minute break."
+                ? "Great work. Take a \(minutes(for: .longBreak))-minute break."
+                : "Take a \(minutes(for: .shortBreak))-minute break."
         case .shortBreak, .longBreak:
             content.title = "Break’s over"
-            content.body = "Time to focus for \(Int(Phase.focus.duration / 60)) minutes."
+            content.body = "Time to focus for \(minutes(for: .focus)) minutes."
         }
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)

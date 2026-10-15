@@ -7,17 +7,74 @@ extension Utility {
         symbol: "timer",
         size: .full,
         content: { AnyView(PomodoroModule(controller: .shared)) },
-        settings: { AnyView(PomodoroSettings()) }
+        settings: { AnyView(PomodoroSettings(controller: .shared)) }
     )
 }
 
-/// Pomodoro preferences.
+/// Pomodoro preferences: how long each step lasts.
 struct PomodoroSettings: View {
+    let controller: PomodoroController
+
     var body: some View {
-        Text("Pomodoro settings are coming soon.")
-            .font(.system(size: 12))
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, minHeight: 60)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Durations")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+
+            VStack(spacing: 8) {
+                row("Pomodoro", phase: .focus)
+                Divider()
+                row("Short Break", phase: .shortBreak)
+                Divider()
+                row("Long Break", phase: .longBreak)
+            }
+
+            HStack(alignment: .firstTextBaseline) {
+                Text("Changes to a step that’s under way apply the next time it starts.")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Button("Restore Defaults", action: controller.restoreDefaultDurations)
+                    .buttonStyle(.link)
+                    .font(.system(size: 11))
+                    .disabled(isDefault)
+            }
+        }
+    }
+
+    private var isDefault: Bool {
+        [PomodoroController.Phase.focus, .shortBreak, .longBreak]
+            .allSatisfy { controller.minutes(for: $0) == $0.defaultMinutes }
+    }
+
+    private func row(_ title: String, phase: PomodoroController.Phase) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(phase.tint)
+                .frame(width: 8, height: 8)
+            Text(title)
+                .font(.system(size: 13))
+
+            Spacer()
+
+            Text("\(controller.minutes(for: phase)) min")
+                .font(.system(size: 13))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .contentTransition(.numericText())
+                .animation(.snappy(duration: 0.2), value: controller.minutes(for: phase))
+
+            Stepper(
+                title,
+                value: Binding(
+                    get: { controller.minutes(for: phase) },
+                    set: { controller.setMinutes($0, for: phase) }
+                ),
+                in: phase.minuteRange
+            )
+            .labelsHidden()
+        }
     }
 }
 

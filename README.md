@@ -7,7 +7,7 @@ A macOS menu bar app that hosts small utilities to help you focus, styled like a
 - **Appearance**: switch the system between Light and Dark mode.
 - **Caffeine**: keep your Mac from going to sleep while it's on.
 - **Stay Green**: keep chat apps like Microsoft Teams showing you as available while it's on. It tells macOS you're active every 30 seconds, without moving the pointer or needing extra permissions. Your display won't sleep while it's on.
-- **Pomodoro**: four 25-minute focus sessions with 5-minute breaks between them, then a 15-minute long break, repeated. Pause, skip or reset any step. Lumina chimes and posts a notification when a step ends and shows the countdown in the menu bar while a session is under way.
+- **Pomodoro**: four 25-minute focus sessions with 5-minute breaks between them, then a 15-minute long break, repeated. You can change all three durations in its settings. Pause, skip or reset any step. Lumina chimes and posts a notification when a step ends and shows the countdown in the menu bar while a session is under way.
 
 Click **Edit Utilities** at the bottom of the panel to customize it:
 
