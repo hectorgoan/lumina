@@ -32,9 +32,15 @@ struct PanelView: View {
 /// The utilities, plus the hidden ones while editing.
 private struct UtilityGrid: View {
     @Environment(UtilityStore.self) private var store
+    private let updates = UpdateController.shared
 
     var body: some View {
         VStack(spacing: 12) {
+            if let version = updates.availableVersion, !store.isEditing {
+                UpdateBanner(version: version, updates: updates)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
             if store.isEditing {
                 Text("Drag utilities to rearrange them.")
                     .font(.system(size: 11))
@@ -85,6 +91,51 @@ private struct UtilityGrid: View {
             ) {
                 withAnimation(.snappy) { store.toggleVisibility(of: utility) }
             }
+        }
+    }
+}
+
+/// Tells the user a new version is ready, above the utilities.
+private struct UpdateBanner: View {
+    let version: String
+    let updates: UpdateController
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(.tint)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Update Available")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("Lumina \(version) is ready to install.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            Button("Update", action: updates.checkForUpdates)
+                .buttonStyle(.glassProminent)
+                .controlSize(.small)
+
+            Button {
+                withAnimation(.snappy) { updates.dismissBanner() }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.borderless)
+            .help("Remind Me Later")
+        }
+        .padding(12)
+        .background(.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(.tint.opacity(0.25), lineWidth: 0.5)
         }
     }
 }
@@ -147,10 +198,9 @@ private struct PanelFooter: View {
             .controlSize(.large)
 
             Menu {
-                Button("About Lumina") {
-                    NSApp.activate()
-                    NSApp.orderFrontStandardAboutPanel()
-                }
+                Button("About Lumina", action: AboutPanel.show)
+                Button("Check for Updates…", action: UpdateController.shared.checkForUpdates)
+                    .disabled(!UpdateController.shared.canCheckForUpdates)
                 Divider()
                 Button("Quit Lumina") { NSApp.terminate(nil) }
                     .keyboardShortcut("q")

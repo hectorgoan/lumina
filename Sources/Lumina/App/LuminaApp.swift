@@ -9,6 +9,9 @@ struct LuminaApp: App {
 
     init() {
         UNUserNotificationCenter.current().delegate = notificationPresenter
+        // Start the updater at launch so its daily checks run even if the
+        // panel is never opened.
+        _ = UpdateController.shared
     }
 
     var body: some Scene {
