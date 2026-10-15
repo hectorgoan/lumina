@@ -4,7 +4,6 @@ import SwiftUI
 struct ModuleTile<Content: View, Badges: View>: View {
     var isEditing: Bool
     var isLifted: Bool
-    var isHidden: Bool = false
     @ViewBuilder var content: Content
     /// Controls pinned to the tile's top-right corner while editing.
     @ViewBuilder var badges: Badges
@@ -16,9 +15,7 @@ struct ModuleTile<Content: View, Badges: View>: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .allowsHitTesting(!isEditing)
-            .saturation(isHidden ? 0 : 1)
-            .opacity(isHidden ? 0.4 : 1)
-            .background(.fill.quaternary.opacity(isHidden ? 0.5 : 1), in: shape)
+            .background(.fill.quaternary, in: shape)
             .overlay {
                 shape.strokeBorder(.separator.opacity(isEditing ? 1 : 0.4), lineWidth: 0.5)
             }
@@ -32,7 +29,6 @@ struct ModuleTile<Content: View, Badges: View>: View {
             .scaleEffect(isLifted ? 1.03 : 1)
             .shadow(color: .black.opacity(isLifted ? 0.22 : 0), radius: 14, y: 8)
             .animation(.snappy(duration: 0.2), value: isLifted)
-            .animation(.snappy(duration: 0.25), value: isHidden)
     }
 }
 

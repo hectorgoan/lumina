@@ -5,45 +5,55 @@ struct PanelView: View {
     @Environment(UtilityStore.self) private var store
 
     var body: some View {
-        VStack(spacing: 12) {
-            if let utility = store.settingsUtility, let settings = utility.settings {
-                SettingsPage(utility: utility, content: settings)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
-            } else if store.isAddingWorldClock {
-                WorldClockPicker()
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
-            } else if store.isAddingBatteryWidget {
-                BatteryWidgetPicker()
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
-            } else {
-                UtilityGrid()
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .leading).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
+        HStack(alignment: .top, spacing: 12) {
+            mainColumn
+                .frame(width: 296)
+                .frame(maxHeight: .infinity)
+
+            if store.isEditing {
+                UtilityLibrary()
+                    .frame(width: 230)
+                    .transition(.identity)
             }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(12)
+        .onDisappear { store.isEditing = false }
+    }
+
+    /// The current page, with the footer pinned to the bottom of the panel
+    /// even when the library beside it is taller.
+    private var mainColumn: some View {
+        VStack(spacing: 12) {
+            currentPage
+                // Pages swap without a transition: the menu bar window
+                // resizes to fit its content, and laying out two pages at
+                // once mid-animation made it flicker.
+                .transition(.identity)
+
+            Spacer(minLength: 0)
 
             PanelFooter()
         }
-        .padding(12)
-        .frame(width: 320)
-        .clipped()
-        .onDisappear { store.isEditing = false }
+    }
+
+    @ViewBuilder private var currentPage: some View {
+        if let utility = store.settingsUtility, let settings = utility.settings {
+            SettingsPage(utility: utility, content: settings)
+        } else if store.isAddingWorldClock {
+            WorldClockPicker()
+        } else if store.isAddingBatteryWidget {
+            BatteryWidgetPicker()
+        } else {
+            UtilityGrid()
+        }
     }
 }
 
 /// The utilities, plus the hidden ones while editing.
 private struct UtilityGrid: View {
     @Environment(UtilityStore.self) private var store
+    @StateObject private var drop = LibraryDropTarget()
     private let updates = UpdateController.shared
 
     var body: some View {
@@ -54,13 +64,15 @@ private struct UtilityGrid: View {
             }
 
             if store.isEditing {
-                Text("Drag utilities to rearrange them.")
+                Text("Drag to rearrange. Hidden utilities wait in the Library.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .transition(.opacity.combined(with: .move(edge: .top)))
-            } else if store.visibleUtilities.isEmpty {
-                Text("All utilities are hidden.")
+            }
+
+            if store.visibleUtilities.isEmpty {
+                Text(store.isEditing ? "Add utilities from the Library." : "All utilities are hidden.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
@@ -69,35 +81,36 @@ private struct UtilityGrid: View {
 
             ReorderableGrid(
                 items: Binding(
-                    get: { store.isEditing ? store.utilities : store.visibleUtilities },
+                    get: { store.visibleUtilities },
                     set: { store.reorder($0) }
                 ),
                 isEditing: store.isEditing,
                 spacing: 10,
                 span: \.size.span
             ) { utility, isLifted in
-                ModuleTile(
-                    isEditing: store.isEditing,
-                    isLifted: isLifted,
-                    isHidden: store.isHidden(utility)
-                ) {
+                ModuleTile(isEditing: store.isEditing, isLifted: isLifted) {
                     utility.content()
                 } badges: {
                     badges(for: utility)
                 }
             }
 
-            if store.isEditing {
-                HStack(spacing: 10) {
-                    AddTile(title: "World Clock") {
-                        withAnimation(.snappy) { store.isAddingWorldClock = true }
-                    }
-                    AddTile(title: "Batteries") {
-                        withAnimation(.snappy) { store.isAddingBatteryWidget = true }
-                    }
-                }
-                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+        }
+        // Utilities dragged in from the library land at the end.
+        .dropDestination(for: String.self) { payloads, _ in
+            withAnimation(.snappy) {
+                payloads.contains { LibraryDrag.handle($0, in: store) }
             }
+        } isTargeted: { isTargeted in
+            drop.isTargeted = isTargeted && store.isEditing
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(.tint, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                .padding(-6)
+                .opacity(drop.isTargeted ? 1 : 0)
+                .animation(.snappy, value: drop.isTargeted)
+                .allowsHitTesting(false)
         }
     }
 

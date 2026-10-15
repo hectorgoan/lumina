@@ -36,13 +36,13 @@ Requires macOS 26 or later.
 
   The Mac's battery comes from a public API. Accessory levels come from `IOPSCopyPowerSourcesByType`, which IOKit exports but doesn't declare publicly.
 
-Click **Edit Utilities** at the bottom of the panel to customize it:
+Click **Edit Utilities** at the bottom of the panel to customize it. The Library opens beside the panel:
 
 - Drag the modules to rearrange them.
-- Click the eye badge on a module to hide or show it. Hidden modules move to the bottom and only appear, dimmed, while editing.
+- Click the eye badge on a module to hide it; it moves to the Library. Bring it back with its **+** or by dragging it into the panel.
 - Click the gear badge to open a utility's settings, for utilities that have them.
-- Click **+ Batteries** to add a battery widget: pick a size and see it with your devices before adding it.
-- Click **+ World Clock** to pick a city and add a clock for it. Search by city, country or code; use the arrow keys and Return, or click. Clocks show a remove badge (−) instead of the eye.
+- Under **Add New** in the Library, add a **Batteries** widget (pick a size and see it with your devices first) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
+- Search the Library by name.
 
 Lumina remembers your layout.
 
