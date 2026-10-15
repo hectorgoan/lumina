@@ -1,6 +1,10 @@
-# Lumina
+<p align="center">
+  <img src="docs/icon.png" width="128" height="128" alt="Lumina app icon">
+</p>
 
-A macOS menu bar app that hosts small utilities to help you focus, styled like a Control Center applet.
+<h1 align="center">Lumina</h1>
+
+<p align="center">A macOS menu bar app that hosts small utilities to help you focus, styled like a Control Center applet.</p>
 
 ## Utilities
 
@@ -58,3 +62,9 @@ To go back to ad hoc signing, delete the "Lumina Development" certificate and it
 3. Register it in `Utility.catalog`.
 
 New utilities go to the end of the user's saved order.
+
+## License
+
+Lumina is released under the [MIT License](LICENSE).
+
+Made with ❤️ by [@hectorgoan](https://github.com/hectorgoan).
