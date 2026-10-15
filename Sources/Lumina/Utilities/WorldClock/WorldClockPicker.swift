@@ -1,29 +1,5 @@
 import SwiftUI
 
-/// The dashed tile that ends the grid in edit mode and opens the city picker.
-struct AddWorldClockTile: View {
-    @Environment(UtilityStore.self) private var store
-
-    var body: some View {
-        Button {
-            withAnimation(.snappy) { store.isAddingWorldClock = true }
-        } label: {
-            Label("World Clock", systemImage: "plus")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, minHeight: 54)
-                .background {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                        .foregroundStyle(.tertiary)
-                }
-                .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        }
-        .buttonStyle(PressableButtonStyle())
-        .help("Add World Clock")
-    }
-}
-
 /// Picks a city for a new world clock, in place of the grid.
 struct WorldClockPicker: View {
     @Environment(UtilityStore.self) private var store

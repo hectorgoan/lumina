@@ -18,6 +18,12 @@ struct PanelView: View {
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .trailing).combined(with: .opacity)
                     ))
+            } else if store.isAddingBatteryWidget {
+                BatteryWidgetPicker()
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
             } else {
                 UtilityGrid()
                     .transition(.asymmetric(
@@ -82,10 +88,13 @@ private struct UtilityGrid: View {
             }
 
             if store.isEditing {
-                // Half width, like the clocks it adds.
                 HStack(spacing: 10) {
-                    AddWorldClockTile()
-                    Color.clear.frame(height: 1)
+                    AddTile(title: "World Clock") {
+                        withAnimation(.snappy) { store.isAddingWorldClock = true }
+                    }
+                    AddTile(title: "Batteries") {
+                        withAnimation(.snappy) { store.isAddingBatteryWidget = true }
+                    }
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
             }

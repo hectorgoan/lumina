@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// Owns the ordered list of utilities, which ones are hidden, the world
-/// clocks the user added, and the panel's edit state.
+/// clocks and battery widgets the user added, and the panel's edit state.
 @MainActor
 @Observable
 final class UtilityStore {
     private static let orderKey = "utilityOrder"
     private static let hiddenKey = "hiddenUtilities"
     private static let worldClocksKey = "worldClocks"
+    private static let batteryWidgetsKey = "batteryWidgets"
 
     /// Every utility in display order. Hidden utilities always come after
     /// the visible ones.
@@ -23,11 +24,16 @@ final class UtilityStore {
         didSet { defaults.set(try? JSONEncoder().encode(worldClocks), forKey: Self.worldClocksKey) }
     }
 
+    private(set) var batteryWidgets: [BatteryWidget] {
+        didSet { defaults.set(try? JSONEncoder().encode(batteryWidgets), forKey: Self.batteryWidgetsKey) }
+    }
+
     var isEditing = false {
         didSet {
             if !isEditing {
                 settingsUtilityID = nil
                 isAddingWorldClock = false
+                isAddingBatteryWidget = false
             }
         }
     }
@@ -37,6 +43,9 @@ final class UtilityStore {
 
     /// Whether the world clock city picker is open.
     var isAddingWorldClock = false
+
+    /// Whether the battery widget size picker is open.
+    var isAddingBatteryWidget = false
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -49,7 +58,10 @@ final class UtilityStore {
         let clocks = defaults.data(forKey: Self.worldClocksKey)
             .flatMap { try? JSONDecoder().decode([WorldClock].self, from: $0) } ?? []
         worldClocks = clocks
-        let all = catalog + clocks.compactMap(Utility.worldClock)
+        let batteries = defaults.data(forKey: Self.batteryWidgetsKey)
+            .flatMap { try? JSONDecoder().decode([BatteryWidget].self, from: $0) } ?? []
+        batteryWidgets = batteries
+        let all = catalog + clocks.compactMap(Utility.worldClock) + batteries.map(Utility.batteryWidget)
 
         let savedOrder = defaults.stringArray(forKey: Self.orderKey) ?? []
         let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
@@ -110,10 +122,7 @@ final class UtilityStore {
         let clock = WorldClock(id: "worldClock-\(UUID().uuidString)", cityCode: city.code)
         guard let utility = Utility.worldClock(clock) else { return }
         worldClocks.append(clock)
-        var updated = utilities
-        let insertionIndex = updated.firstIndex { hiddenIDs.contains($0.id) } ?? updated.endIndex
-        updated.insert(utility, at: insertionIndex)
-        utilities = updated
+        insertVisible(utility)
         isAddingWorldClock = false
     }
 
@@ -126,10 +135,43 @@ final class UtilityStore {
         worldClocks[index].menuBar = display
     }
 
+    // MARK: - Battery widgets
+
+    /// Adds a battery widget of the given size after the visible utilities
+    /// and closes the picker.
+    func addBatteryWidget(size: BatteryWidget.Size) {
+        let widget = BatteryWidget(id: "batteries-\(UUID().uuidString)", size: size)
+        batteryWidgets.append(widget)
+        insertVisible(Utility.batteryWidget(widget))
+        isAddingBatteryWidget = false
+    }
+
+    func batteryWidget(withID id: String) -> BatteryWidget? {
+        batteryWidgets.first { $0.id == id }
+    }
+
+    /// Saves a widget's new configuration. Its utility is rebuilt in place,
+    /// since a new size changes its width.
+    func updateBatteryWidget(_ widget: BatteryWidget) {
+        guard let index = batteryWidgets.firstIndex(where: { $0.id == widget.id }) else { return }
+        batteryWidgets[index] = widget
+        if let position = utilities.firstIndex(where: { $0.id == widget.id }) {
+            utilities[position] = Utility.batteryWidget(widget)
+        }
+    }
+
+    private func insertVisible(_ utility: Utility) {
+        var updated = utilities
+        let insertionIndex = updated.firstIndex { hiddenIDs.contains($0.id) } ?? updated.endIndex
+        updated.insert(utility, at: insertionIndex)
+        utilities = updated
+    }
+
     /// Removes a utility the user added, such as a world clock.
     func remove(_ utility: Utility) {
         guard utility.isRemovable else { return }
         worldClocks.removeAll { $0.id == utility.id }
+        batteryWidgets.removeAll { $0.id == utility.id }
         hiddenIDs.remove(utility.id)
         utilities.removeAll { $0.id == utility.id }
     }
