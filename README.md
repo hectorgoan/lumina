@@ -12,7 +12,7 @@
 2. Move **Lumina.app** to your Applications folder and open it.
 3. Lumina isn't notarized by Apple, so the first time you open it macOS says it can't check it for malicious software. Go to **System Settings › Privacy & Security**, scroll to Security, and click **Open Anyway** next to the message about Lumina.
 
-You only need to do this once. Lumina checks for updates daily and shows a banner at the top of its panel when one is ready; you can also choose **Check for Updates…** from the **…** menu. Updates install in place without asking you to allow Lumina again.
+You only need to do this once. Lumina checks for updates when it opens and every six hours, and shows a banner at the top of its panel when one is ready; you can also choose **Check for Updates…** from the **…** menu. Updates install in place without asking you to allow Lumina again.
 
 Requires macOS 26 or later.
 
