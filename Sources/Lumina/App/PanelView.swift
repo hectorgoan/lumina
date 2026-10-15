@@ -65,8 +65,13 @@ private struct UtilityGrid: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            if let version = updates.availableVersion, !store.isEditing {
+            if let version = updates.availableVersion, !store.isLibraryExpanded {
+                // Fades out before edit mode's resize and back in after it;
+                // its space closes and reopens with the resize itself.
                 UpdateBanner(version: version, updates: updates)
+                    .fadesWithoutColorShift()
+                    .opacity(store.isEditing ? 0 : 1)
+                    .transition(.identity)
             }
 
             if store.isLibraryExpanded {
@@ -271,33 +276,41 @@ private struct PanelFooter: View {
         }
     }
 
-    /// Opening: the panel widens, then the library and edit controls fade in.
-    /// Closing: they fade out, then the panel narrows. The window's size only
-    /// animates while the space it gains or loses is empty, which keeps its
-    /// glass from flickering.
+    /// Opening: the update banner (if any) fades out, the panel resizes to
+    /// make room, then the library and edit controls fade in. Closing runs
+    /// the same steps in reverse. The window's size only animates while the
+    /// space it gains or loses is empty, which keeps its glass from
+    /// flickering.
     private func toggleEditing() {
         if store.isEditing {
-            // Fade everything out, then close up the empty space, then leave
-            // edit mode once the panel is back to its usual width.
             withAnimation(Motion.dismiss, completionCriteria: .removed) {
                 store.isLibraryPresented = false
             } completion: {
                 withAnimation(Motion.resize, completionCriteria: .removed) {
                     store.isLibraryExpanded = false
                 } completion: {
-                    store.isEditing = false
+                    withAnimation(Motion.present) { store.isEditing = false }
                 }
+            }
+        } else if UpdateController.shared.availableVersion != nil {
+            // Fade the banner out first, so its space closes while empty.
+            withAnimation(Motion.dismiss, completionCriteria: .removed) {
+                store.isEditing = true
+            } completion: {
+                expandForEditing()
             }
         } else {
             store.isEditing = true
             // Next turn of the run loop, once edit mode's layout is in place.
-            DispatchQueue.main.async {
-                withAnimation(Motion.resize, completionCriteria: .removed) {
-                    store.isLibraryExpanded = true
-                } completion: {
-                    withAnimation(Motion.present) { store.isLibraryPresented = true }
-                }
-            }
+            DispatchQueue.main.async(execute: expandForEditing)
+        }
+    }
+
+    private func expandForEditing() {
+        withAnimation(Motion.resize, completionCriteria: .removed) {
+            store.isLibraryExpanded = true
+        } completion: {
+            withAnimation(Motion.present) { store.isLibraryPresented = true }
         }
     }
 }
