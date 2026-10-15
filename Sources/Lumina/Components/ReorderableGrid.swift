@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// A two-column grid of tiles that can be dragged into a new order while
+/// A four-column grid of tiles that can be dragged into a new order while
 /// editing.
 ///
-/// Full-width tiles take a whole row and half-width tiles pair up side by
-/// side, in order. The dragged tile follows the pointer while the others
+/// Tiles span one, two or all four columns and fill rows in order, starting
+/// a new row when the next tile doesn't fit. The dragged tile follows the pointer while the others
 /// animate out of the way.
 struct ReorderableGrid<Item: Identifiable, Content: View>: View {
     @Binding var items: [Item]
     var isEditing: Bool
     var spacing: CGFloat = 10
-    /// The number of columns (1 or 2) an item spans.
+    /// The number of columns (1 to 4) an item spans.
     var span: (Item) -> Int
     @ViewBuilder var content: (_ item: Item, _ isLifted: Bool) -> Content
 
@@ -119,16 +119,23 @@ private final class DragState<ID: Hashable>: ObservableObject {
 
 /// The number of grid columns a tile spans.
 struct TileSpan: LayoutValueKey {
-    static let defaultValue = 2
+    static let defaultValue = TileGridMetrics.columns
 }
 
 /// The packing rules shared by the layout and the drag logic.
 struct TileGridMetrics {
+    static let columns = 4
+
     var width: CGFloat
     var spacing: CGFloat
 
+    private var columnWidth: CGFloat {
+        (width - spacing * CGFloat(Self.columns - 1)) / CGFloat(Self.columns)
+    }
+
     func width(forSpan span: Int) -> CGFloat {
-        span >= 2 ? width : (width - spacing) / 2
+        let span = CGFloat(min(max(span, 1), Self.columns))
+        return columnWidth * span + spacing * (span - 1)
     }
 
     /// Places tiles row by row, starting a new row whenever a tile doesn't
@@ -140,13 +147,13 @@ struct TileGridMetrics {
         var rowHeight: CGFloat = 0
 
         for (span, height) in zip(spans, heights) {
-            let span = min(span, 2)
-            if column + span > 2 {
+            let span = min(max(span, 1), Self.columns)
+            if column + span > Self.columns {
                 y += rowHeight + spacing
                 column = 0
                 rowHeight = 0
             }
-            let x = CGFloat(column) * (width(forSpan: 1) + spacing)
+            let x = CGFloat(column) * (columnWidth + spacing)
             frames.append(CGRect(x: x, y: y, width: width(forSpan: span), height: height))
             rowHeight = max(rowHeight, height)
             column += span
