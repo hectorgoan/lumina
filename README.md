@@ -6,6 +6,16 @@
 
 <p align="center">A macOS menu bar app that hosts small utilities to help you focus, styled like a Control Center applet.</p>
 
+## Installing
+
+1. Download [Lumina.zip](https://github.com/hectorgoan/lumina/releases/latest/download/Lumina.zip) from the latest release and unzip it.
+2. Move **Lumina.app** to your Applications folder and open it.
+3. Lumina isn't notarized by Apple, so the first time you open it macOS says it can't check it for malicious software. Go to **System Settings › Privacy & Security**, scroll to Security, and click **Open Anyway** next to the message about Lumina.
+
+You only need to do this once. Lumina checks for updates daily and shows a banner at the top of its panel when one is ready; you can also choose **Check for Updates…** from the **…** menu. Updates install in place without asking you to allow Lumina again.
+
+Requires macOS 26 or later.
+
 ## Utilities
 
 - **Appearance**: switch the system between Light and Dark mode.
@@ -54,6 +64,33 @@ LUMINA_SIGN_IDENTITY="Apple Development: Your Name (TEAMID)" make run
 ```
 
 To go back to ad hoc signing, delete the "Lumina Development" certificate and its private key in Keychain Access.
+
+## Releasing
+
+Every push to `main` (usually a merged pull request) runs the [Release workflow](.github/workflows/release.yml) on GitHub's macOS 26 runner. It:
+
+1. Builds Lumina and signs it with the "Lumina Development" certificate.
+2. Zips the app and signs the zip with Sparkle's update key.
+3. Publishes a GitHub Release with `Lumina.zip` and `appcast.xml`, the update feed the app checks.
+
+Versions are `major.minor.run`: the major and minor version come from `CFBundleShortVersionString` in `Resources/Info.plist`, and the patch is the workflow's run number. To release 0.2, change the version in `Info.plist` to `0.2.0`.
+
+Updates use [Sparkle](https://sparkle-project.org). Each update is signed with a private key that only you and the workflow have, and the app checks that signature before installing.
+
+### One-time setup
+
+```bash
+scripts/setup-release-secrets.sh
+```
+
+This creates Sparkle's update signing key in your login keychain (or reuses an existing one) and writes its public half to `Resources/Info.plist`. It then stores these repository secrets with the GitHub CLI:
+
+- `SPARKLE_PRIVATE_KEY`: the update signing key.
+- `LUMINA_CERT_P12` and `LUMINA_CERT_PASSWORD`: the "Lumina Development" certificate, so release builds keep the same signature and macOS keeps Lumina's permissions across updates. Create the certificate first with `scripts/create-signing-cert.sh` if you haven't.
+
+macOS asks you to allow access to the keychain along the way. Commit the updated `Resources/Info.plist` afterwards. The workflow refuses to release until the public key is set.
+
+Keep a backup of the update key (Sparkle's `generate_keys -x` tool exports it). If it's lost, installed copies can't verify new updates.
 
 ## Adding a utility
 

@@ -32,5 +32,13 @@
 	<string>Lumina uses System Events to switch between Light and Dark appearance.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Héctor Go. An. MIT License.</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/hectorgoan/lumina/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>pY5C2gCwUnQPCEP5pGHe0F4VXsJc7bDKZn2sYGxe6+I=</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 </dict>
 </plist>
