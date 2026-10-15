@@ -63,15 +63,31 @@ struct EditBadge: View {
 /// A circular toggle in the style of Control Center: filled with its tint
 /// (the accent color by default) when on, a translucent fill when off.
 struct ModuleToggleButton: View {
-    let symbol: String
+    /// What the button shows: an SF Symbol or a short piece of text.
+    enum Glyph {
+        case symbol(String)
+        case text(String)
+    }
+
+    let glyph: Glyph
     var tint: Color = .accentColor
     let isOn: Bool
     let action: () -> Void
 
+    init(symbol: String, tint: Color = .accentColor, isOn: Bool, action: @escaping () -> Void) {
+        self.init(glyph: .symbol(symbol), tint: tint, isOn: isOn, action: action)
+    }
+
+    init(glyph: Glyph, tint: Color = .accentColor, isOn: Bool, action: @escaping () -> Void) {
+        self.glyph = glyph
+        self.tint = tint
+        self.isOn = isOn
+        self.action = action
+    }
+
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 14, weight: .semibold))
+            glyphView
                 .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
                 .frame(width: 30, height: 30)
                 .background {
@@ -81,6 +97,20 @@ struct ModuleToggleButton: View {
         }
         .buttonStyle(PressableButtonStyle())
         .animation(.snappy(duration: 0.2), value: isOn)
+    }
+
+    @ViewBuilder private var glyphView: some View {
+        switch glyph {
+        case .symbol(let name):
+            Image(systemName: name)
+                .font(.system(size: 14, weight: .semibold))
+                .transition(.scale(scale: 0.6).combined(with: .opacity))
+        case .text(let text):
+            Text(text)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .fixedSize()
+                .transition(.scale(scale: 0.6).combined(with: .opacity))
+        }
     }
 }
 

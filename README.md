@@ -9,6 +9,7 @@ A macOS menu bar app that hosts small utilities to help you focus, styled like a
 - **Stay Green**: keep chat apps like Microsoft Teams showing you as available while it's on. It tells macOS you're active every 30 seconds, without moving the pointer or needing extra permissions. Your display won't sleep while it's on.
 - **Pomodoro**: four 25-minute focus sessions with 5-minute breaks between them, then a 15-minute long break, repeated. You can change all three durations in its settings. Pause, skip or reset any step. Lumina chimes and posts a notification when a step ends and shows the countdown in the menu bar while a session is under way.
 - **Keyboard**: lock the keyboard so you can clean it. Every key, including media and brightness keys, is ignored until you click the tile again; the mouse and trackpad keep working. Needs Accessibility permission.
+- **Quit All**: quit every open app with one click, as if you pressed ⌘Q in each. Apps with unsaved changes still ask to save. In its settings, choose apps to keep open; Finder and Lumina are never quit.
 
 Click **Edit Utilities** at the bottom of the panel to customize it:
 
@@ -53,7 +54,7 @@ To go back to ad hoc signing, delete the "Lumina Development" certificate and it
 ## Adding a utility
 
 1. Create a module view under `Sources/Lumina/Utilities/<Name>/`.
-2. Add a `static let` `Utility` for it, choosing a `.full` or `.half` size and, optionally, a `settings` view (see `PomodoroModule.swift`).
+2. Add a `static let` `Utility` for it, choosing a `.full`, `.half` or `.quarter` size and, optionally, a `settings` view (see `PomodoroModule.swift`).
 3. Register it in `Utility.catalog`.
 
 New utilities go to the end of the user's saved order.

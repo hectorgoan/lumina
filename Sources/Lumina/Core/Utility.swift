@@ -7,10 +7,16 @@ import SwiftUI
 struct Utility: Identifiable {
     /// How much of the panel's width a module takes.
     enum Size {
-        case half, full
+        case quarter, half, full
 
-        /// The number of grid columns the module spans.
-        var span: Int { self == .full ? 2 : 1 }
+        /// The number of grid columns (out of four) the module spans.
+        var span: Int {
+            switch self {
+            case .quarter: 1
+            case .half: 2
+            case .full: 4
+            }
+        }
     }
 
     /// Stable identifier, persisted to remember the user's ordering.
@@ -32,5 +38,6 @@ extension Utility {
         .stayGreen,
         .pomodoro,
         .keyboardLock,
+        .quitAll,
     ]
 }
