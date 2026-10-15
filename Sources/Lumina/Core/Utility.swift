@@ -40,6 +40,8 @@ extension Utility {
     /// Every utility Lumina ships, in its default order.
     static let catalog: [Utility] = [
         .appearance,
+        .compactAppearance,
+        .appearanceRow,
         .caffeine,
         .stayGreen,
         .pomodoro,
