@@ -57,6 +57,7 @@ extension Utility {
         .keyboardLock,
         .quitAll,
         .cleanup,
+        .uninstaller,
         .systemStatus,
         .systemList,
         .cpuFocus,

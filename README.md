@@ -77,6 +77,15 @@ Requires macOS 26 or later.
   - **Mail Attachments** (off by default, needs Full Disk Access): Mail's downloaded copies.
 
   Everything except old downloads is deleted rather than moved to the Trash. Cleanup never touches system folders, which would need administrator rights.
+- **Uninstaller**: removes an app and everything it left in your Library: its Application Support files, caches, containers, preferences, launch agents, saved state, web data and logs. Everything goes to the Trash, so **Put Back** undoes it.
+  - The tile shows your largest apps not opened in a while (3 months to a year, set in its settings) and a search field for any app.
+  - Review what's found before anything moves, grouped by kind with sizes; uncheck a group, or open it to see each file. Apps that are open are quit first.
+  - Drop apps on Lumina's menu bar icon, or open the **Dumpster** from the tile: a small window that stays above Finder to toss several apps into at once.
+  - When you delete an app in Finder, Lumina notices and offers to clean up what it left.
+  - **Left behind** lists files from apps deleted before, matched by bundle ID.
+  - Apps on its **Never Suggest or Uninstall** list are never suggested or removed, and Apple's apps are always protected.
+
+  It only looks in your user Library and matches files by the app's exact bundle ID or name, never partial ones. Checking an app's container may make macOS ask once to let Lumina access other apps' data.
 - **Keyboard**: lock the keyboard so you can clean it. Every key, including media and brightness keys, is ignored until you click the tile again; the mouse and trackpad keep working. Needs Accessibility permission.
 - **Quit All**: quit every open app with one click, as if you pressed ⌘Q in each. Apps with unsaved changes still ask to save. In its settings, choose apps to keep open; Finder and Lumina are never quit.
 - **System**: CPU, memory, CPU temperature and fan speed as gauges, with load for each core, grouped into efficiency and performance cores. Two alternative layouts start hidden; show them in edit mode:

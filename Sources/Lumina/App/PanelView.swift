@@ -26,7 +26,14 @@ struct PanelView: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(12)
-        .onDisappear { store.isEditing = false }
+        .onAppear { store.isPanelOpen = true }
+        .onDisappear {
+            store.isPanelOpen = false
+            store.isEditing = false
+            // The Uninstaller starts over next time, unless it's mid-way
+            // through moving things to the Trash.
+            if !UninstallerController.shared.isWorking { store.uninstallerPage = nil }
+        }
     }
 
     /// Edit mode's sidebar. It stays while a settings or add page is open;
@@ -71,6 +78,8 @@ struct PanelView: View {
             WorldClockPicker()
         } else if store.isAddingBatteryWidget {
             BatteryWidgetPicker()
+        } else if let page = store.uninstallerPage {
+            UninstallerPageView(page: page, controller: .shared)
         } else {
             UtilityGrid()
         }

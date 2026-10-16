@@ -217,6 +217,13 @@ struct Feature {
             tiles: [.utility("cleanup")]
         ),
         Feature(
+            slug: "uninstaller", name: "Uninstaller", symbol: "xmark.app.fill", tint: .red,
+            headline: "Gone means gone.",
+            detail: "Removes an app and everything it left behind, through the Trash so you can put it back. Toss apps in the Dumpster, or drop them on the menu bar.",
+            utilityIDs: ["uninstaller"],
+            tiles: [.utility("uninstaller")]
+        ),
+        Feature(
             slug: "customize", name: "Customize", symbol: "square.grid.2x2.fill", tint: .purple,
             headline: "Make it yours.",
             detail: "Drag tiles into any order, hide the ones you don’t need, and add world clocks and batteries from the Library.",
