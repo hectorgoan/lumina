@@ -16,11 +16,6 @@ struct LuminaApp: App {
         UNUserNotificationCenter.current().delegate = notificationPresenter
         UninstallerController.shared.store = store
         MenuBarPanel.store = store
-        // The menu bar item exists once the app has finished launching.
-        DispatchQueue.main.async { MenuBarPanel.acceptDrops() }
-        // Start the updater at launch so its daily checks run even if the
-        // panel is never opened.
-        _ = UpdateController.shared
     }
 
     var body: some Scene {

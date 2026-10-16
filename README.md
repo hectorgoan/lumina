@@ -80,7 +80,7 @@ Requires macOS 26 or later.
 - **Uninstaller**: removes an app and everything it left in your Library: its Application Support files, caches, containers, preferences, launch agents, saved state, web data and logs. Everything goes to the Trash, so **Put Back** undoes it.
   - The tile shows your largest apps not opened in a while (3 months to a year, set in its settings) and a search field for any app.
   - Review what's found before anything moves, grouped by kind with sizes; uncheck a group, or open it to see each file. Apps that are open are quit first.
-  - Drop apps on Lumina's menu bar icon, or open the **Dumpster** from the tile: a small window that stays above Finder to toss several apps into at once.
+  - Open the **Dumpster** from the tile: a small window that stays above Finder, to drag several apps into at once.
   - When you delete an app in Finder, Lumina notices and offers to clean up what it left.
   - **Left behind** lists files from apps deleted before, matched by bundle ID.
   - Apps on its **Never Suggest or Uninstall** list are never suggested or removed, and Apple's apps are always protected.

@@ -134,10 +134,6 @@ final class UninstallerController: NSObject {
         didSet { defaults.set(showsUnusedOnTile, forKey: Keys.showsUnused) }
     }
 
-    var isDropTipDismissed: Bool {
-        didSet { defaults.set(isDropTipDismissed, forKey: Keys.tip) }
-    }
-
     // MARK: State
 
     private(set) var apps: [InstalledApp] = []
@@ -171,7 +167,6 @@ final class UninstallerController: NSObject {
         static let threshold = "uninstaller.unusedMonths"
         static let notices = "uninstaller.noticesDeletions"
         static let protected = "uninstaller.neverUninstall"
-        static let tip = "uninstaller.dropTipDismissed"
         static let showsUnused = "uninstaller.showsUnusedOnTile"
         static let sizes = "uninstaller.sizeCache"
     }
@@ -184,7 +179,6 @@ final class UninstallerController: NSObject {
         noticesDeletions = defaults.object(forKey: Keys.notices) as? Bool ?? true
         protectedApps = defaults.data(forKey: Keys.protected)
             .flatMap { try? JSONDecoder().decode([ProtectedApp].self, from: $0) } ?? []
-        isDropTipDismissed = defaults.bool(forKey: Keys.tip)
         showsUnusedOnTile = defaults.bool(forKey: Keys.showsUnused)
         sizeCache = defaults.dictionary(forKey: Keys.sizes) as? [String: [Double]] ?? [:]
         super.init()
@@ -224,6 +218,7 @@ final class UninstallerController: NSObject {
         isScanning = true
         let cache = sizeCache
         let home = home
+        let started = Date.now
         scanTask = Task {
             let (found, measured) = await Task.detached(priority: .utility) {
                 Self.catalog(cache: cache)
@@ -239,6 +234,11 @@ final class UninstallerController: NSObject {
 
             sizeCache.merge(measured) { $1 }
             defaults.set(sizeCache, forKey: Keys.sizes)
+            // With cached sizes a scan can take a blink; keep the feedback
+            // on screen long enough to read as "it scanned".
+            let elapsed = Date.now.timeIntervalSince(started)
+            if elapsed < 0.8 { try? await Task.sleep(for: .seconds(0.8 - elapsed)) }
+            guard !Task.isCancelled else { return }
             withAnimation(Motion.present) {
                 apps = found
                 leftBehind = orphans
@@ -302,11 +302,14 @@ final class UninstallerController: NSObject {
     }
 
     /// Opens the review page in the panel, opening the panel if needed:
-    /// for apps dropped on the menu bar or tossed in the Dumpster.
-    func reviewFromOutside(_ apps: [InstalledApp]) {
+    /// for apps tossed in the Dumpster.
+    /// Returns whether the panel opened; if not, the review waits there
+    /// for the next time it's opened.
+    @discardableResult
+    func reviewFromOutside(_ apps: [InstalledApp]) -> Bool {
         result = nil
         review(apps)
-        MenuBarPanel.open()
+        return MenuBarPanel.open()
     }
 
     private func startReview(_ entries: [UninstallEntry], isLoaded: Bool = false) {

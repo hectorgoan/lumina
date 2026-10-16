@@ -139,9 +139,16 @@ struct DumpsterView: View {
                     .help("Take the apps back out; nothing is removed")
                     Spacer()
                     Button("Review & Uninstall…") {
-                        UninstallerController.shared.reviewFromOutside(model.apps)
+                        let opened = UninstallerController.shared.reviewFromOutside(model.apps)
                         model.apps = []
-                        close()
+                        if opened {
+                            close()
+                        } else {
+                            // Opening the panel takes the Accessibility
+                            // permission; the review waits in the panel.
+                            model.note = "Click Lumina in the menu bar to review them. To have it open on its own, allow Lumina in Privacy & Security › Accessibility."
+                            MenuBarPanel.requestPermission()
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)

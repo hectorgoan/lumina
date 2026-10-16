@@ -219,7 +219,7 @@ struct Feature {
         Feature(
             slug: "uninstaller", name: "Uninstaller", symbol: "xmark.app.fill", tint: .red,
             headline: "Gone means gone.",
-            detail: "Removes an app and everything it left behind, through the Trash so you can put it back. Toss apps in the Dumpster, or drop them on the menu bar.",
+            detail: "Removes an app and everything it left behind, through the Trash so you can put it back. Or toss several into the Dumpster at once.",
             utilityIDs: ["uninstaller"],
             tiles: [.utility("uninstaller")]
         ),

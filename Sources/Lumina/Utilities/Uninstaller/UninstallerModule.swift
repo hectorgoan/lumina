@@ -60,6 +60,7 @@ struct UninstallerModule: View {
             Spacer(minLength: 0)
 
             roundButton(help: "Scan Again", action: controller.scan) {
+                // Turns while a scan runs, like Cleanup's.
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 11, weight: .semibold))
                     .symbolEffect(.rotate, options: .repeat(.continuous), isActive: controller.isScanning)
@@ -90,6 +91,7 @@ struct UninstallerModule: View {
     private var subtitle: String {
         if let notice = controller.notice { return "\(notice.name) left files behind" }
         guard controller.hasScanned else { return "Looking at your apps…" }
+        if controller.isScanning { return "Scanning…" }
         guard controller.showsUnusedOnTile else {
             return controller.apps.count == 1 ? "1 app" : "\(controller.apps.count) apps"
         }
@@ -244,19 +246,13 @@ struct UninstallerModule: View {
     }
 }
 
-/// The Uninstaller's settings: the menu bar tip, what counts as unused,
+/// The Uninstaller's settings: what counts as unused,
 /// noticing deletions, and the Never Uninstall list.
 struct UninstallerSettings: View {
     @Bindable var controller: UninstallerController
-    @StateObject private var tip = TipVisibility()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !controller.isDropTipDismissed {
-                DropTip(dismiss: dismissTip)
-                    .opacity(tip.isVisible ? 1 : 0)
-            }
-
             Toggle("Show Unused Apps on the Tile", isOn: $controller.showsUnusedOnTile)
                 .toggleStyle(.switch)
                 .controlSize(.small)
@@ -318,15 +314,6 @@ struct UninstallerSettings: View {
         }
     }
 
-    /// The tip fades out, then the page closes its space.
-    private func dismissTip() {
-        withAnimation(Motion.dismiss, completionCriteria: .removed) {
-            tip.isVisible = false
-        } completion: {
-            withAnimation(Motion.resize) { controller.isDropTipDismissed = true }
-        }
-    }
-
     private func label(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 11, weight: .semibold))
@@ -339,47 +326,6 @@ struct UninstallerSettings: View {
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
     }
-}
-
-/// A dismissible tip: apps can be dropped on the menu bar icon.
-private struct DropTip: View {
-    let dismiss: () -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "lightbulb.max.fill")
-                .font(.system(size: 16))
-                .foregroundStyle(.yellow)
-                .frame(width: 22)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Drop Apps on the Menu Bar")
-                    .font(.system(size: 12, weight: .semibold))
-                Text("Drag an app from Finder onto Lumina’s icon in the menu bar to uninstall it. Or open the Dumpster from the tile and toss in several at once.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-
-            Button(action: dismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.tertiary)
-            }
-            .buttonStyle(.borderless)
-            .help("Hide this tip")
-        }
-        .padding(10)
-        .background(Color.yellow.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.yellow.opacity(0.25), lineWidth: 0.8))
-    }
-}
-
-@MainActor
-private final class TipVisibility: ObservableObject {
-    @Published var isVisible = true
 }
 
 /// A gray placeholder shape, shown where content will be once it's loaded.
