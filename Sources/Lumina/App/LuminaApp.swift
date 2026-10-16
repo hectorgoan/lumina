@@ -39,33 +39,60 @@ private struct MenuBarLabel: View {
 
     var body: some View {
         Image(nsImage: Self.render(
-            status: MenuBarStatus(isCaffeinated: caffeine.isActive, isStayingGreen: stayGreen.isActive),
+            status: MenuBarStatus(
+                isCaffeinated: caffeine.isActive,
+                isStayingGreen: stayGreen.isActive,
+                stayGreenIndicator: stayGreen.indicator
+            ),
             time: pomodoro.isInProgress ? pomodoro.formattedRemaining : nil
         ))
     }
 
     /// The menu bar shows only the first image or text of a label, so the
-    /// badged icon and the time are drawn together into one template image.
-    /// It's always drawn this way so the icon keeps the same size and position
+    /// badged icon and the time are drawn together into one image. It's
+    /// always drawn this way so the icon keeps the same size and position
     /// whatever its state.
     private static func render(status: MenuBarStatus, time: String?) -> NSImage {
+        let image: NSImage
+        if status.showsGreen {
+            // A template image can only be one color, so draw the icon's own
+            // color at draw time in the menu bar's label color, then the green.
+            let ink = rasterize(status: status, time: time, layer: .ink)
+            let green = rasterize(status: status, time: time, layer: .green)
+            image = NSImage(size: ink.size, flipped: false) { rect in
+                guard let context = NSGraphicsContext.current?.cgContext else { return false }
+                // Tint only the ink, not what's already under the image.
+                context.beginTransparencyLayer(auxiliaryInfo: nil)
+                ink.draw(in: rect)
+                NSColor.labelColor.set()
+                rect.fill(using: .sourceAtop)
+                context.endTransparencyLayer()
+                green.draw(in: rect)
+                return true
+            }
+        } else {
+            image = rasterize(status: status, time: time, layer: .all)
+            image.isTemplate = true
+        }
+        image.accessibilityDescription = accessibilityDescription(for: status, time: time)
+        return image
+    }
+
+    private static func rasterize(status: MenuBarStatus, time: String?, layer: MenuBarIconView.Layer) -> NSImage {
         let content = HStack(spacing: 5) {
-            MenuBarIconView(status: status)
+            MenuBarIconView(status: status, layer: layer)
             if let time {
                 Text(time)
                     .font(.system(size: 13, weight: .medium))
                     .monospacedDigit()
+                    .foregroundStyle(layer == .green ? Color.clear : .black)
             }
         }
-        .foregroundStyle(.black)
         .frame(height: 18)
 
         let renderer = ImageRenderer(content: content)
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
-        let image = renderer.nsImage ?? NSImage()
-        image.isTemplate = true
-        image.accessibilityDescription = accessibilityDescription(for: status, time: time)
-        return image
+        return renderer.nsImage ?? NSImage()
     }
 
     private static func accessibilityDescription(for status: MenuBarStatus, time: String?) -> String {

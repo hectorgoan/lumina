@@ -61,7 +61,7 @@ Requires macOS 26 or later.
   - **Compact Appearance**: just the Light and Dark previews, at half width.
   - **Appearance Row**: the toggle and the previews in a single full-width row.
 - **Caffeine**: keep your Mac and its display awake while it's on, so neither sleep nor the screen saver kicks in.
-- **Stay Green**: keep chat apps like Microsoft Teams showing you as available while it's on. It tells macOS you're active every 30 seconds, without moving the pointer or needing extra permissions. Your display won't sleep while it's on.
+- **Stay Green**: keep chat apps like Microsoft Teams showing you as available while it's on. It tells macOS you're active every 30 seconds, without moving the pointer or needing extra permissions. Your display won't sleep while it's on. Lumina's menu bar icon shows it's on; in its settings, choose the indicator (a dot in place of a ray, a halo around the center, green rays, or none) and whether it's green.
 - **Pomodoro**: four 25-minute focus sessions with 5-minute breaks between them, then a 15-minute long break, repeated. You can change all three durations in its settings. Pause, skip or reset any step. Lumina chimes and posts a notification when a step ends and shows the countdown in the menu bar while a session is under way.
 - **Keyboard**: lock the keyboard so you can clean it. Every key, including media and brightness keys, is ignored until you click the tile again; the mouse and trackpad keep working. Needs Accessibility permission.
 - **Quit All**: quit every open app with one click, as if you pressed ⌘Q in each. Apps with unsaved changes still ask to save. In its settings, choose apps to keep open; Finder and Lumina are never quit.
