@@ -22,11 +22,11 @@ extension UtilityStore {
         guard !isTransitioning else { _ = change(); return }
         isTransitioning = true
 
-        withAnimation(Motion.dismiss, completionCriteria: .removed) {
+        step(Motion.dismiss, lasting: Motion.dismissDuration) {
             isPageVisible = false
         } completion: {
             var added: String?
-            withAnimation(Motion.resize, completionCriteria: .removed) {
+            self.step(Motion.resize, lasting: Motion.resizeDuration) {
                 added = change()
                 if let added { self.fadingUtilityIDs.insert(added) }
             } completion: {
@@ -63,7 +63,7 @@ extension UtilityStore {
         fadingUtilityIDs.insert(utility.id)
         // Let the poof read before the other tiles move in.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            withAnimation(Motion.resize, completionCriteria: .removed) {
+            self.step(Motion.resize, lasting: Motion.resizeDuration) {
                 self.remove(utility)
             } completion: {
                 self.fadingUtilityIDs.remove(utility.id)
@@ -84,10 +84,10 @@ extension UtilityStore {
         guard !isTransitioning else { change(); return }
         isTransitioning = true
 
-        withAnimation(Motion.dismiss, completionCriteria: .removed) {
+        step(Motion.dismiss, lasting: Motion.dismissDuration) {
             _ = fadingUtilityIDs.insert(id)
         } completion: {
-            withAnimation(Motion.resize, completionCriteria: .removed) {
+            self.step(Motion.resize, lasting: Motion.resizeDuration) {
                 change()
             } completion: {
                 self.fadingUtilityIDs.remove(id)
@@ -101,12 +101,42 @@ extension UtilityStore {
         isTransitioning = true
 
         var added = ""
-        withAnimation(Motion.resize, completionCriteria: .removed) {
+        step(Motion.resize, lasting: Motion.resizeDuration) {
             added = change()
             fadingUtilityIDs.insert(added)
         } completion: {
             withAnimation(Motion.present) { _ = self.fadingUtilityIDs.remove(added) }
             self.isTransitioning = false
         }
+    }
+
+    /// Runs one animated step of a transition, then `completion` once
+    /// SwiftUI reports the step done, or once its curve has run if it
+    /// doesn't. Something animating endlessly nearby (like a symbol that
+    /// turns while a scan runs) can keep that report from ever coming,
+    /// which left the panel sitting empty until it stopped.
+    func step(_ animation: Animation, lasting duration: TimeInterval, _ change: () -> Void, completion: @escaping @MainActor () -> Void) {
+        let once = StepCompletion(completion)
+        withAnimation(animation, completionCriteria: .removed, change) { once.run() }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(duration + 0.05))
+            once.run()
+        }
+    }
+}
+
+/// Runs a step's completion only once, whichever signal comes first.
+@MainActor
+private final class StepCompletion {
+    private var action: (@MainActor () -> Void)?
+
+    init(_ action: @escaping @MainActor () -> Void) {
+        self.action = action
+    }
+
+    func run() {
+        let action = action
+        self.action = nil
+        action?()
     }
 }

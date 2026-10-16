@@ -104,24 +104,9 @@ struct CleanupModule: View {
         }
     }
 
-    /// Scans again; it turns while a scan is under way.
+    /// Scans again, with one quick turn of the arrow.
     private var refreshButton: some View {
-        let isScanning = controller.phase == .scanning
-        return Button {
-            controller.scan()
-        } label: {
-            Image(systemName: "arrow.clockwise")
-                .font(.system(size: 11, weight: .semibold))
-                .symbolEffect(.rotate, options: .repeat(.continuous), isActive: isScanning)
-                .foregroundStyle(isScanning ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-                .frame(width: 26, height: 26)
-                .background(Circle().fill(Color.panelTrack))
-                .contentShape(Circle())
-        }
-        .buttonStyle(PressableButtonStyle())
-        .disabled(isScanning)
-        .help("Scan Now")
-        .accessibilityLabel("Scan Now")
+        RefreshButton(isWorking: controller.phase == .scanning) { controller.scan() }
     }
 
     private var status: String {
