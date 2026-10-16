@@ -71,6 +71,24 @@ final class UtilityStore {
     /// Whether the battery widget size picker is open.
     var isAddingBatteryWidget = false
 
+    /// The Uninstaller page shown in place of the grid, if any.
+    var uninstallerPage: UninstallerPage?
+
+    /// Whether the menu bar panel is open.
+    var isPanelOpen = false
+
+    /// The size chosen on the battery widget add page.
+    var newBatteryWidgetSize: BatteryWidget.Size = .large
+
+    /// The city highlighted on the world clock add page.
+    var previewCityCode: String?
+
+    /// Whether a settings or add page is open, so edit mode's sidebar shows
+    /// a preview instead of the Library.
+    var isConfiguring: Bool {
+        settingsUtilityID != nil || isAddingWorldClock || isAddingBatteryWidget
+    }
+
     @ObservationIgnored private let defaults: UserDefaults
 
     init(catalog: [Utility] = Utility.catalog, defaults: UserDefaults = .standard) {
@@ -219,4 +237,9 @@ final class UtilityStore {
     private static func partitioned(_ utilities: [Utility], hidden: Set<String>) -> [Utility] {
         utilities.filter { !hidden.contains($0.id) } + utilities.filter { hidden.contains($0.id) }
     }
+}
+
+/// The Uninstaller's pages, shown in place of the grid.
+enum UninstallerPage {
+    case list, review, done
 }

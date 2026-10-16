@@ -14,8 +14,9 @@ struct PanelView: View {
                 // The panel widens before the library fades in, and narrows
                 // after it fades out, so the window only animates its size
                 // while the glass there is empty.
-                UtilityLibrary()
+                sidebar
                     .frame(width: 230)
+                    .background(Color.panelSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .fadesWithoutColorShift()
                     .opacity(store.isLibraryPresented ? 1 : 0)
                     .padding(.leading, 12)
@@ -25,7 +26,32 @@ struct PanelView: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(12)
-        .onDisappear { store.isEditing = false }
+        .onAppear { store.isPanelOpen = true }
+        .onDisappear {
+            store.isPanelOpen = false
+            store.isEditing = false
+            // The Uninstaller starts over next time, unless it's mid-way
+            // through moving things to the Trash.
+            if !UninstallerController.shared.isWorking { store.uninstallerPage = nil }
+        }
+    }
+
+    /// Edit mode's sidebar. It stays while a settings or add page is open;
+    /// only what's in it changes: the Library crossfades into a preview of
+    /// the tile as the panel resizes for the page, and back again.
+    private var sidebar: some View {
+        ZStack(alignment: .top) {
+            UtilityLibrary()
+                .fadesWithoutColorShift()
+                .opacity(store.isConfiguring ? 0 : 1)
+                .allowsHitTesting(!store.isConfiguring)
+
+            if store.isConfiguring {
+                UtilityPreview()
+                    .fadesWithoutColorShift()
+                    .transition(.opacity)
+            }
+        }
     }
 
     /// The current page, with the footer pinned to the bottom of the panel
@@ -52,6 +78,8 @@ struct PanelView: View {
             WorldClockPicker()
         } else if store.isAddingBatteryWidget {
             BatteryWidgetPicker()
+        } else if let page = store.uninstallerPage {
+            UninstallerPageView(page: page, controller: .shared)
         } else {
             UtilityGrid()
         }
@@ -63,16 +91,17 @@ private struct UtilityGrid: View {
     @Environment(UtilityStore.self) private var store
     @StateObject private var drop = LibraryDropTarget()
     @StateObject private var tileFrames = TileFrames()
+    @StateObject private var banner = BannerState()
     private let updates = UpdateController.shared
 
     var body: some View {
         VStack(spacing: 12) {
-            if let version = updates.availableVersion, !store.isLibraryExpanded {
+            if let version = banner.version, !store.isLibraryExpanded {
                 // Fades out before edit mode's resize and back in after it;
                 // its space closes and reopens with the resize itself.
                 UpdateBanner(version: version, updates: updates)
                     .fadesWithoutColorShift()
-                    .opacity(store.isEditing ? 0 : 1)
+                    .opacity(store.isEditing || !banner.isVisible ? 0 : 1)
                     .transition(.identity)
             }
 
@@ -120,6 +149,11 @@ private struct UtilityGrid: View {
             }
 
         }
+        // An update found while the panel is open: the panel makes room
+        // first, then the banner fades in; dismissing it goes in reverse.
+        .onChange(of: updates.availableVersion, initial: true) { old, new in
+            banner.update(to: new, animated: old != new, store: store)
+        }
         // Utilities dragged in from the library land at the end.
         .dropDestination(for: String.self) { payloads, _ in
             payloads.contains { LibraryDrag.handle($0, in: store) }
@@ -161,6 +195,40 @@ private struct UtilityGrid: View {
                     store.hideTile(utility)
                 }
             }
+        }
+    }
+}
+
+/// The update banner as shown, trailing the update controller so its
+/// arrival and departure can be animated in steps.
+@MainActor
+private final class BannerState: ObservableObject {
+    /// Makes room for the banner while set.
+    @Published var version: String?
+    /// The banner's opacity, which changes once its room is made.
+    @Published var isVisible = false
+
+    func update(to newVersion: String?, animated: Bool, store: UtilityStore) {
+        switch (version, newVersion) {
+        case (nil, let arriving?):
+            guard animated else {
+                version = arriving
+                isVisible = true
+                return
+            }
+            store.step(Motion.resize, lasting: Motion.resizeDuration) {
+                self.version = arriving
+            } completion: {
+                withAnimation(Motion.present) { self.isVisible = true }
+            }
+        case (_?, nil):
+            store.step(Motion.dismiss, lasting: Motion.dismissDuration) {
+                self.isVisible = false
+            } completion: {
+                withAnimation(Motion.resize) { self.version = nil }
+            }
+        default:
+            version = newVersion
         }
     }
 }

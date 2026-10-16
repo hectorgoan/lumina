@@ -16,11 +16,13 @@ enum Motion {
     // nominal duration, which left the panel sitting empty between steps.
 
     /// Something leaving.
-    static let dismiss = Animation.easeInOut(duration: 0.16)
+    static let dismiss = Animation.easeInOut(duration: dismissDuration)
+    static let dismissDuration: TimeInterval = 0.16
 
     /// The panel changing size around empty space, like making room for the
     /// library before it fades in.
-    static let resize = Animation.easeInOut(duration: 0.22)
+    static let resize = Animation.easeInOut(duration: resizeDuration)
+    static let resizeDuration: TimeInterval = 0.22
 }
 
 extension View {

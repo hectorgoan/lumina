@@ -14,9 +14,8 @@ struct LuminaApp: App {
         worldClockMenuBar = WorldClockMenuBar(store: store)
 
         UNUserNotificationCenter.current().delegate = notificationPresenter
-        // Start the updater at launch so its daily checks run even if the
-        // panel is never opened.
-        _ = UpdateController.shared
+        UninstallerController.shared.store = store
+        MenuBarPanel.store = store
     }
 
     var body: some Scene {
@@ -111,5 +110,11 @@ private final class NotificationPresenter: NSObject, UNUserNotificationCenterDel
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         [.banner, .list]
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard response.notification.request.content.categoryIdentifier == UninstallerController.notificationCategory else { return }
+        let action = response.actionIdentifier
+        await MainActor.run { UninstallerController.shared.handleNotificationAction(action) }
     }
 }

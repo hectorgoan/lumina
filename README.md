@@ -45,6 +45,7 @@
 <td width="50%"><a href="docs/marketing/features/cleanup.png"><img src="docs/marketing/readme/features/cleanup.jpg" alt="Cleanup: Junk out, space back."></a></td>
 </tr>
 <tr>
+<td width="50%"><a href="docs/marketing/features/uninstaller.png"><img src="docs/marketing/readme/features/uninstaller.jpg" alt="Uninstaller: Gone means gone."></a></td>
 <td width="50%"><a href="docs/marketing/features/customize.png"><img src="docs/marketing/readme/features/customize.jpg" alt="Customize: Make it yours."></a></td>
 </tr>
 </table>
@@ -77,6 +78,15 @@ Requires macOS 26 or later.
   - **Mail Attachments** (off by default, needs Full Disk Access): Mail's downloaded copies.
 
   Everything except old downloads is deleted rather than moved to the Trash. Cleanup never touches system folders, which would need administrator rights.
+- **Uninstaller**: removes an app and everything it left in your Library: its Application Support files, caches, containers, preferences, launch agents, saved state, web data and logs. Everything goes to the Trash, so **Put Back** undoes it, or click **Empty Trash** to free the space at once (it empties everything in the Trash). macOS doesn't let apps remove other apps, so Lumina asks Finder to move app bundles to the Trash; the first time, macOS asks to let Lumina control Finder.
+  - The tile shows your largest apps not opened in a while (3 months to a year, set in its settings) and a search field for any app.
+  - Review what's found before anything moves, grouped by kind with sizes; uncheck a group, or open it to see each file. Apps that are open are quit first.
+  - Open the **Dumpster** from the tile: a small window that stays above Finder, to drag several apps into at once.
+  - When you delete an app in Finder, Lumina notices and offers to clean up what it left.
+  - **Left behind** lists files from apps deleted before, matched by bundle ID.
+  - Apps on its **Never Suggest or Uninstall** list are never suggested or removed, and Apple's apps are always protected.
+
+  It only looks in your user Library and matches files by the app's exact bundle ID or name, never partial ones. Checking an app's container may make macOS ask once to let Lumina access other apps' data.
 - **Keyboard**: lock the keyboard so you can clean it. Every key, including media and brightness keys, is ignored until you click the tile again; the mouse and trackpad keep working. Needs Accessibility permission.
 - **Quit All**: quit every open app with one click, as if you pressed ⌘Q in each. Apps with unsaved changes still ask to save. In its settings, choose apps to keep open; Finder and Lumina are never quit.
 - **System**: CPU, memory, CPU temperature and fan speed as gauges, with load for each core, grouped into efficiency and performance cores. Two alternative layouts start hidden; show them in edit mode:
@@ -93,8 +103,8 @@ Click **Edit Utilities** at the bottom of the panel to customize it. The Library
 
 - Drag the modules to rearrange them.
 - Click the eye badge on a module to hide it; it moves to the Library. Bring it back with its **+** or by dragging it into the panel.
-- Click the gear badge to open a utility's settings, for utilities that have them.
-- Under **Add New** in the Library, add a **Batteries** widget (pick a size and see it with your devices first) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
+- Click the gear badge to open a utility's settings, for utilities that have them. While a settings or add page is open, the Library makes way for a live preview of the tile, and comes back when you go back.
+- Under **Add New** in the Library, add a **Batteries** widget (pick a size and see it with your devices in the preview) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
 - Search the Library by name.
 
 Lumina remembers your layout.
@@ -175,7 +185,7 @@ scripts/render-marketing.sh
 
 The script compiles Lumina's sources, minus its `@main`, together with `scripts/marketing/main.swift` into a small renderer. It also rewrites the gallery between the `features` markers in this README. That file holds the scenes, layouts and copy; `Feature.all` lists each feature's card. Features come from the app, `Utility.catalog` and the Library's **Add New** items, so a new utility gets a card, a pill in the hero and a tile at the end of the hero's panel on the next run. The hero's desktop grows as needed so the panel always fits. Until it has an entry in `Feature.all`, its card is plain and the script prints a warning.
 
-While it runs it turns on Caffeine and Stay Green and samples the system monitor for about 45 seconds, so the CPU graph has history. System readings and clock times are live; battery devices and Cleanup's results are fixed samples (the renderer builds with `MARKETING` defined for that). The light hero sets only the renderer's own appearance, never the system's.
+While it runs it turns on Caffeine and Stay Green and samples the system monitor for about 45 seconds, so the CPU graph has history. System readings and clock times are live; battery devices and Cleanup's and the Uninstaller's results are fixed samples (the renderer builds with `MARKETING` defined for that). The light hero sets only the renderer's own appearance, never the system's.
 
 ## Adding a utility
 
