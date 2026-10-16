@@ -37,7 +37,8 @@ extension UtilityStore {
             return main + [.moreHeader] + (more.isEmpty ? [.moreHint] : more)
         }
         guard !more.isEmpty else { return main }
-        if moreStyle == .pages { return isMoreOpen ? more : main }
+        // Pages: one page or the other; the section's page has a title.
+        if moreStyle == .pages { return isMoreOpen ? [.moreHeader] + more : main }
         return main + [.moreHeader] + (isMoreOpen ? more : [])
     }
 
@@ -67,7 +68,8 @@ struct MoreHeader: View {
     var body: some View {
         Group {
             switch store.moreStyle {
-            case .row, .pages: row
+            case .row: row
+            case .pages: pageTitle
             case .stack: store.isMoreOpen ? AnyView(stackTitle) : AnyView(stack)
             }
         }
@@ -132,6 +134,32 @@ struct MoreHeader: View {
         .buttonStyle(PressableButtonStyle())
         .help("Show \(store.moreTitle)")
         .opacity(store.isMoreFading ? 0 : 1)
+    }
+
+    /// The section's page title in the Pages style, like a sub-page in
+    /// Control Center: it says where you are, and goes back.
+    private var pageTitle: some View {
+        HStack(spacing: 6) {
+            Button { store.showMorePage(false) } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Text(store.moreTitle)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PressableButtonStyle())
+            .help("Back to Utilities")
+            Spacer(minLength: 0)
+            Text(store.moreUtilities.count == 1 ? "1 utility" : "\(store.moreUtilities.count) utilities")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 4)
+        .frame(height: 22)
     }
 
     private var stackTitle: some View {
