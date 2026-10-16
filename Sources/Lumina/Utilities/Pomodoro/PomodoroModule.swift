@@ -190,7 +190,7 @@ private struct SessionDots: View {
         HStack(spacing: 5) {
             ForEach(0..<total, id: \.self) { index in
                 Circle()
-                    .fill(index < completed ? AnyShapeStyle(tint) : AnyShapeStyle(.fill.secondary))
+                    .fill(index < completed ? AnyShapeStyle(tint) : AnyShapeStyle(Color.panelTrack))
                     .overlay {
                         if isFocusing && index == completed {
                             Circle().strokeBorder(tint, lineWidth: 1.5)
@@ -212,7 +212,7 @@ private struct ProgressBar: View {
 
     var body: some View {
         Capsule()
-            .fill(.fill.secondary)
+            .fill(Color.panelTrack)
             .frame(height: 6)
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in

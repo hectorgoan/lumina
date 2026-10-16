@@ -15,7 +15,7 @@ struct ModuleTile<Content: View, Badges: View>: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .allowsHitTesting(!isEditing)
-            .background(.fill.quaternary, in: shape)
+            .background(Color.panelSurface, in: shape)
             .overlay {
                 shape.strokeBorder(.separator.opacity(isEditing ? 1 : 0.4), lineWidth: 0.5)
             }
@@ -94,7 +94,7 @@ struct ModuleToggleButton: View {
                 .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
                 .frame(width: 30, height: 30)
                 .background {
-                    Circle().fill(isOn ? AnyShapeStyle(tint) : AnyShapeStyle(.fill.secondary))
+                    Circle().fill(isOn ? AnyShapeStyle(tint) : AnyShapeStyle(Color.panelTrack))
                 }
                 .contentShape(Circle())
         }

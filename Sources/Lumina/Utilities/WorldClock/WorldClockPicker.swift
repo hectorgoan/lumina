@@ -55,7 +55,7 @@ struct WorldClockPicker: View {
                 }
             }
             .padding(6)
-            .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Color.panelSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .onAppear { isSearchFocused = true }
         .onChange(of: search.query) { search.selection = 0 }
@@ -86,7 +86,7 @@ struct WorldClockPicker: View {
         }
         .padding(.horizontal, 9)
         .frame(height: 28)
-        .background(.fill.secondary, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 
     private var results: [WorldClockCity] {
@@ -109,11 +109,11 @@ struct WorldClockPicker: View {
     }
 
     private func add(_ city: WorldClockCity) {
-        store.addWorldClock(for: city)
+        store.swapPage(adding: { store.addWorldClock(for: city) })
     }
 
     private func close() {
-        store.isAddingWorldClock = false
+        store.swapPage { store.isAddingWorldClock = false }
     }
 }
 

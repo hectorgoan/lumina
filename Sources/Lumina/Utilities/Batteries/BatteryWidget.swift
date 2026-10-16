@@ -171,7 +171,7 @@ struct BatteryRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(.fill.secondary, lineWidth: size * 0.1)
+                .stroke(Color.panelTrack, lineWidth: size * 0.1)
             Circle()
                 .trim(from: 0, to: device.level)
                 .stroke(color.gradient, style: StrokeStyle(lineWidth: size * 0.1, lineCap: .round))

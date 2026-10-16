@@ -24,7 +24,7 @@ struct UtilityLibrary: View {
                     }
                     ForEach(hidden, id: \.id) { utility in
                         LibraryRow(symbol: utility.symbol, title: utility.name, detail: utility.size.title) {
-                            store.show(utility)
+                            store.showTile(utility)
                         }
                         .draggable(LibraryDrag.utility(utility.id))
                     }
@@ -51,7 +51,7 @@ struct UtilityLibrary: View {
         }
         .padding(12)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(Color.panelSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var searchField: some View {
@@ -74,7 +74,7 @@ struct UtilityLibrary: View {
         }
         .padding(.horizontal, 9)
         .frame(height: 26)
-        .background(.fill.secondary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private func section(_ title: String) -> some View {
@@ -97,10 +97,7 @@ struct UtilityLibrary: View {
     }
 
     private func open(_ item: LibraryDrag.NewItem) {
-        switch item {
-        case .worldClock: store.isAddingWorldClock = true
-        case .batteries: store.isAddingBatteryWidget = true
-        }
+        LibraryDrag.open(item, in: store)
     }
 }
 
@@ -143,17 +140,25 @@ enum LibraryDrag {
         if payload.hasPrefix(utilityPrefix) {
             let id = String(payload.dropFirst(utilityPrefix.count))
             guard let utility = store.hiddenUtilities.first(where: { $0.id == id }) else { return false }
-            store.show(utility)
+            store.showTile(utility)
             return true
         }
         if payload.hasPrefix(newPrefix), let item = NewItem(rawValue: String(payload.dropFirst(newPrefix.count))) {
+            open(item, in: store)
+            return true
+        }
+        return false
+    }
+
+    /// Opens the add page for a new widget.
+    @MainActor
+    static func open(_ item: NewItem, in store: UtilityStore) {
+        store.swapPage {
             switch item {
             case .worldClock: store.isAddingWorldClock = true
             case .batteries: store.isAddingBatteryWidget = true
             }
-            return true
         }
-        return false
     }
 }
 
@@ -169,7 +174,7 @@ private struct LibraryRow: View {
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .semibold))
                 .frame(width: 26, height: 26)
-                .background(.fill.secondary, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             VStack(alignment: .leading, spacing: 0) {
                 Text(title)
                     .font(.system(size: 12, weight: .medium))

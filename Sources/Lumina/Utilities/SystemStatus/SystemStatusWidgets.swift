@@ -242,7 +242,7 @@ private struct ReadingRing: View {
     var body: some View {
         VStack(spacing: 5) {
             ZStack {
-                Circle().stroke(.fill.secondary, lineWidth: 5)
+                Circle().stroke(Color.panelTrack, lineWidth: 5)
                 Circle()
                     .trim(from: 0, to: fraction)
                     .stroke(tint.gradient, style: StrokeStyle(lineWidth: 5, lineCap: .round))
@@ -282,7 +282,7 @@ private struct ReadingRow: View {
                 .font(.system(size: 12))
                 .frame(width: 78, alignment: .leading)
             Capsule()
-                .fill(.fill.secondary)
+                .fill(Color.panelTrack)
                 .frame(height: 5)
                 .overlay(alignment: .leading) {
                     GeometryReader { proxy in
@@ -322,7 +322,7 @@ private struct ReadingPill: View {
         .padding(.horizontal, 9)
         .padding(.vertical, 5)
         .frame(maxWidth: .infinity)
-        .background(.fill.tertiary, in: Capsule())
+        .background(Color.panelControl, in: Capsule())
     }
 }
 
@@ -349,7 +349,7 @@ private struct CoreBars: View {
                 ForEach(Array(cores.enumerated()), id: \.offset) { _, core in
                     ZStack(alignment: .bottom) {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
-                            .fill(.fill.secondary)
+                            .fill(Color.panelTrack)
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(Color.cpu.gradient)
                             .frame(height: max(3, 26 * core.load))

@@ -33,10 +33,11 @@ struct PanelView: View {
     private var mainColumn: some View {
         VStack(spacing: 12) {
             currentPage
-                // Pages swap without a transition: the menu bar window
-                // resizes to fit its content, and laying out two pages at
-                // once mid-animation made it flicker.
+                // Pages fade out, swap while the panel resizes, and fade in
+                // (see UtilityStore.swapPage); they never overlap.
                 .transition(.identity)
+                .fadesWithoutColorShift()
+                .opacity(store.isPageVisible ? 1 : 0)
 
             Spacer(minLength: 0)
 
@@ -109,6 +110,9 @@ private struct UtilityGrid: View {
                 } badges: {
                     badges(for: utility)
                 }
+                // Tiles being added or removed fade while the grid makes or
+                // closes their space.
+                .opacity(store.fadingUtilityIDs.contains(utility.id) ? 0 : 1)
             }
 
         }
@@ -132,12 +136,12 @@ private struct UtilityGrid: View {
         HStack(spacing: 4) {
             if utility.settings != nil {
                 EditBadge(symbol: "gearshape.fill", help: "\(utility.name) Settings") {
-                    store.settingsUtilityID = utility.id
+                    store.swapPage { store.settingsUtilityID = utility.id }
                 }
             }
             if utility.isRemovable {
                 EditBadge(symbol: "minus", help: "Remove \(utility.name)") {
-                    store.remove(utility)
+                    store.removeTile(utility)
                 }
             } else {
                 let isHidden = store.isHidden(utility)
@@ -145,7 +149,7 @@ private struct UtilityGrid: View {
                     symbol: isHidden ? "eye.slash.fill" : "eye.fill",
                     help: isHidden ? "Show \(utility.name)" : "Hide \(utility.name)"
                 ) {
-                    store.toggleVisibility(of: utility)
+                    store.hideTile(utility)
                 }
             }
         }
@@ -205,7 +209,7 @@ private struct SettingsPage: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Button {
-                    store.settingsUtilityID = nil
+                    store.swapPage { store.settingsUtilityID = nil }
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 11, weight: .semibold))
