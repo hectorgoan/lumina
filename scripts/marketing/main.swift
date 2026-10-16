@@ -84,6 +84,33 @@ let heroTiles: [Tile] = [
     .utility("quitAll"),
 ]
 
+/// The hero's panel: `heroTiles`, plus a tile for every feature it doesn't
+/// show yet, added at the end the way the app adds new utilities. So a new
+/// utility shows up in the hero on the next run.
+@MainActor
+func heroLayout() -> [Tile] {
+    var utilityIDs = Set<String>()
+    var hasClock = false, hasBatteries = false
+    for tile in heroTiles {
+        switch tile {
+        case .utility(let id): utilityIDs.insert(id)
+        case .clock: hasClock = true
+        case .batteries: hasBatteries = true
+        }
+    }
+    var tiles = heroTiles
+    // Edit mode isn't a tile.
+    for feature in Feature.everything where !feature.isEditing {
+        let isShown = !utilityIDs.isDisjoint(with: feature.utilityIDs)
+            || (feature.newItem == .worldClock && hasClock)
+            || (feature.newItem == .batteries && hasBatteries)
+        if !isShown, let tile = feature.tiles.first {
+            tiles.append(tile)
+        }
+    }
+    return tiles
+}
+
 // MARK: - Features
 
 /// A feature with its own card in docs/marketing/features and the README.
@@ -876,8 +903,13 @@ struct Overview: View {
 
 // MARK: - Rendering
 
+/// Where the README's smaller copies of the images go.
+let readmeImages = marketing.appendingPathComponent("readme")
+
+/// Renders a view to a PNG at `url`. With `readmeCopy`, also writes a half
+/// size JPEG there for the README, which loads in a fraction of the time.
 @MainActor
-func save<V: View>(_ view: V, _ url: URL, scale: CGFloat = 2) {
+func save<V: View>(_ view: V, _ url: URL, scale: CGFloat = 2, readmeCopy: URL? = nil) {
     let renderer = ImageRenderer(content: view)
     renderer.scale = scale
     // Some views make ImageRenderer switch to a 16-bit, wide-range image,
@@ -893,6 +925,25 @@ func save<V: View>(_ view: V, _ url: URL, scale: CGFloat = 2) {
     let png = rep.representation(using: .png, properties: [:])!
     try! png.write(to: url)
     print("wrote \(url.path.replacingOccurrences(of: root.path + "/", with: "")) \(rep.pixelsWide)x\(rep.pixelsHigh)")
+
+    if let readmeCopy, let small = halfSizeJPEG(of: context.makeImage()!) {
+        try! FileManager.default.createDirectory(at: readmeCopy.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try! small.write(to: readmeCopy)
+        print("wrote \(readmeCopy.path.replacingOccurrences(of: root.path + "/", with: "")) \(small.count / 1024) KB")
+    }
+}
+
+/// The image at half its size (1x), as a JPEG.
+func halfSizeJPEG(of image: CGImage) -> Data? {
+    let width = image.width / 2, height = image.height / 2
+    guard let context = CGContext(
+        data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+    ) else { return nil }
+    context.interpolationQuality = .high
+    context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+    return NSBitmapImageRep(cgImage: context.makeImage()!)
+        .representation(using: .jpeg, properties: [.compressionFactor: 0.82])
 }
 
 /// Shows the app in light or dark, the way the Appearance tile reads it
@@ -916,7 +967,7 @@ func updateReadme(with features: [Feature]) {
     for pair in stride(from: 0, to: features.count, by: 2) {
         rows.append("<tr>")
         for feature in features[pair..<min(pair + 2, features.count)] {
-            rows.append("<td width=\"50%\"><img src=\"docs/marketing/features/\(feature.slug).png\" alt=\"\(feature.name): \(feature.headline)\"></td>")
+            rows.append("<td width=\"50%\"><a href=\"docs/marketing/features/\(feature.slug).png\"><img src=\"docs/marketing/readme/features/\(feature.slug).jpg\" alt=\"\(feature.name): \(feature.headline)\"></a></td>")
         }
         rows.append("</tr>")
     }
@@ -931,22 +982,42 @@ MainActor.assumeIsolated {
     CaffeineController.shared.toggle()
     StayGreenController.shared.toggle()
     SystemMonitor.shared.attach()
-    // Only looks: the tile shows what this Mac has to clean.
-    CleanupController.shared.scan()
     _ = AppearanceController.shared
 }
 // Let the monitors fill most of the CPU graph's one-minute history.
 RunLoop.main.run(until: Date().addingTimeInterval(45))
 
 MainActor.assumeIsolated {
+    // Fixed results, like the battery widgets' sample devices: a real scan
+    // depends on when this Mac was last cleaned.
+    CleanupController.shared.showSampleResults(
+        [.caches: 4_100_000_000, .developer: 2_300_000_000, .trash: 820_000_000, .logs: 6_000_000],
+        availableCapacity: 221_200_000_000
+    )
+
     let featuresDirectory = marketing.appendingPathComponent("features")
     try? FileManager.default.removeItem(at: featuresDirectory)
+    try? FileManager.default.removeItem(at: readmeImages)
     try! FileManager.default.createDirectory(at: featuresDirectory, withIntermediateDirectories: true)
 
-    let hero = CGSize(width: 1440, height: 900)
+    // 16:10, at least 1440 × 900 points, and tall enough for the panel
+    // under the menu bar: as tiles are added, the desktop grows (and so
+    // looks smaller) rather than cutting the panel off. Always 2880 pixels
+    // wide.
+    let panelHeight = NSHostingView(rootView: Panel(
+        store: makeStore(heroLayout()), dark: true, wallpaperSize: .zero, origin: .zero
+    ).fixedSize()).fittingSize.height
+    let heroHeight = max(900, (panelHeight + 32 + 9 + 40).rounded(.up))
+    let hero = CGSize(width: heroHeight * 1.6, height: heroHeight)
     for dark in [true, false] {
         useAppearance(dark: dark)
-        save(Hero(store: makeStore(heroTiles), dark: dark, size: hero), marketing.appendingPathComponent("hero-\(dark ? "dark" : "light").png"))
+        let name = "hero-\(dark ? "dark" : "light")"
+        save(
+            Hero(store: makeStore(heroLayout()), dark: dark, size: hero),
+            marketing.appendingPathComponent("\(name).png"),
+            scale: 2880 / hero.width,
+            readmeCopy: readmeImages.appendingPathComponent("\(name).jpg")
+        )
     }
 
     useAppearance(dark: true)
@@ -954,7 +1025,11 @@ MainActor.assumeIsolated {
 
     let features = Feature.everything
     for feature in features {
-        save(FeatureCard(feature: feature, dark: true), featuresDirectory.appendingPathComponent("\(feature.slug).png"))
+        save(
+            FeatureCard(feature: feature, dark: true),
+            featuresDirectory.appendingPathComponent("\(feature.slug).png"),
+            readmeCopy: readmeImages.appendingPathComponent("features/\(feature.slug).jpg")
+        )
     }
     updateReadme(with: features)
 
