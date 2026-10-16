@@ -278,6 +278,26 @@ final class UninstallerController: NSObject {
         return sizes
     }
 
+    #if MARKETING
+    /// Shows fixed results instead of this Mac's apps, for the images
+    /// scripts/render-marketing.sh makes (it builds with MARKETING defined).
+    func showSampleResults(appCount: Int, leftBehind sample: [LeftBehindApp]) {
+        scanTask?.cancel()
+        apps = (0..<appCount).map { index in
+            InstalledApp(
+                url: URL(fileURLWithPath: "/Applications/Sample \(index).app"),
+                bundleID: "com.example.sample\(index)", name: "Sample \(index)",
+                version: nil, vendor: nil, lastUsed: .now, bytes: 200_000_000
+            )
+        }
+        leftBehind = sample
+        hasScanned = true
+        isScanning = false
+        // Fresh, so the tile doesn't scan this Mac when it appears.
+        lastScan = .now
+    }
+    #endif
+
     // MARK: - Pages
 
     func openList(tab: ListTab = .lastOpened) {

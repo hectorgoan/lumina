@@ -1001,6 +1001,17 @@ MainActor.assumeIsolated {
         [.caches: 4_100_000_000, .developer: 2_300_000_000, .trash: 820_000_000, .logs: 6_000_000],
         availableCapacity: 221_200_000_000
     )
+    UninstallerController.shared.showSampleResults(appCount: 84, leftBehind: [
+        LeftBehindApp(bundleID: "com.spotify.client", name: "Spotify", items: [
+            Leftover(url: URL(fileURLWithPath: "/sample/spotify"), kind: .caches, bytes: 210_000_000),
+        ]),
+        LeftBehindApp(bundleID: "us.zoom.xos", name: "Zoom", items: [
+            Leftover(url: URL(fileURLWithPath: "/sample/zoom"), kind: .applicationSupport, bytes: 96_000_000),
+        ]),
+        LeftBehindApp(bundleID: "notion.id", name: "Notion", items: [
+            Leftover(url: URL(fileURLWithPath: "/sample/notion"), kind: .caches, bytes: 41_000_000),
+        ]),
+    ])
 
     let featuresDirectory = marketing.appendingPathComponent("features")
     try? FileManager.default.removeItem(at: featuresDirectory)
