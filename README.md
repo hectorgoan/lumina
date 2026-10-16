@@ -10,13 +10,40 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/marketing/hero-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/marketing/hero-light.png">
-    <img src="docs/marketing/hero-dark.png" alt="Lumina's panel open below its menu bar icon, with Appearance, Caffeine, Stay Green, two world clocks, Pomodoro and a battery widget" width="100%">
+    <img src="docs/marketing/hero-dark.png" alt="Lumina's panel open below its menu bar icon, with CPU Focus, Caffeine, Stay Green, a world clock, two battery widgets, Pomodoro, Appearance, Keyboard Lock and Quit All" width="100%">
   </picture>
 </p>
 
 <p align="center">
   <a href="https://github.com/hectorgoan/lumina/releases/latest/download/Lumina.zip"><b>Download Lumina</b></a>
 </p>
+
+## Features
+
+<!-- features:start -->
+<table>
+<tr>
+<td width="50%"><img src="docs/marketing/features/caffeine.png" alt="Caffeine: Keep your Mac awake."></td>
+<td width="50%"><img src="docs/marketing/features/stay-green.png" alt="Stay Green: Always available."></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/marketing/features/pomodoro.png" alt="Pomodoro: Focus in rounds."></td>
+<td width="50%"><img src="docs/marketing/features/world-clocks.png" alt="World Clocks: Every time zone you work with."></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/marketing/features/batteries.png" alt="Batteries: Every battery, one look."></td>
+<td width="50%"><img src="docs/marketing/features/system.png" alt="System: Your Mac’s vitals."></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/marketing/features/appearance.png" alt="Appearance: Light or dark, instantly."></td>
+<td width="50%"><img src="docs/marketing/features/keyboard-lock.png" alt="Keyboard Lock: Clean your keyboard, not your document."></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/marketing/features/quit-all.png" alt="Quit All: A fresh start, in one click."></td>
+<td width="50%"><img src="docs/marketing/features/customize.png" alt="Customize: Make it yours."></td>
+</tr>
+</table>
+<!-- features:end -->
 
 ## Installing
 
@@ -119,10 +146,11 @@ Keep a backup of the update key (Sparkle's `generate_keys -x` tool exports it). 
 
 ## Marketing images
 
-`docs/marketing` holds the README's hero images and cards for social posts:
+`docs/marketing` holds the README's hero images, a social card and a card for every feature:
 
-- `hero-dark.png` and `hero-light.png`: 2880 × 1800 (16:10 at 2x), a desktop with Lumina's panel open below its menu bar icon.
-- `x-overview.png`, `x-widgets.png` and `x-flow.png`: 1600 × 900, X's recommended 16:9 size, each with a headline.
+- `hero-dark.png` and `hero-light.png`: 2880 × 1800 (16:10 at 2x), a desktop with Lumina's panel open below its menu bar icon and the pitch beside it.
+- `x-overview.png`: 1600 × 900, X's recommended 16:9 size.
+- `features/*.png`: 1600 × 900, one per feature, shown in the [Features](#features) gallery above.
 
 They're rendered from the app's real views, so regenerate them after changing the UI:
 
@@ -130,13 +158,16 @@ They're rendered from the app's real views, so regenerate them after changing th
 scripts/render-marketing.sh
 ```
 
-The script compiles Lumina's sources, minus its `@main`, together with `scripts/marketing/main.swift` into a small renderer. That file holds the scenes, layouts and copy. While it runs it turns on Caffeine and Stay Green and samples the system monitor for about 45 seconds, so the CPU graph has history. Battery levels, clock times and system readings are your Mac's live values.
+The script compiles Lumina's sources, minus its `@main`, together with `scripts/marketing/main.swift` into a small renderer. It also rewrites the gallery between the `features` markers in this README. That file holds the scenes, layouts and copy; `Feature.all` lists each feature's card. Features come from the app, `Utility.catalog` and the Library's **Add New** items, so a new utility gets a card (and a pill in the hero) on the next run. Until it has an entry in `Feature.all`, its card is plain and the script prints a warning.
+
+While it runs it turns on Caffeine and Stay Green and samples the system monitor for about 45 seconds, so the CPU graph has history. System readings and clock times are live; battery devices are fixed sample devices. The light hero sets only the renderer's own appearance, never the system's.
 
 ## Adding a utility
 
 1. Create a module view under `Sources/Lumina/Utilities/<Name>/`.
 2. Add a `static let` `Utility` for it, choosing a `.full`, `.half` or `.quarter` size and, optionally, a `settings` view (see `PomodoroModule.swift`).
 3. Register it in `Utility.catalog`.
+4. Give it a card in `Feature.all` (`scripts/marketing/main.swift`) and run `scripts/render-marketing.sh`.
 
 New utilities go to the end of the user's saved order.
 
