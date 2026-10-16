@@ -54,19 +54,14 @@ struct UninstallerModule: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    // Changes animate, like Cleanup's status.
                     .contentTransition(.numericText())
+                    .animation(.snappy(duration: 0.25), value: subtitle)
             }
 
             Spacer(minLength: 0)
 
-            roundButton(help: "Scan Again", action: controller.scan) {
-                // Turns while a scan runs, like Cleanup's.
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 11, weight: .semibold))
-                    .symbolEffect(.rotate, options: .repeat(.continuous), isActive: controller.isScanning)
-                    .foregroundStyle(controller.isScanning ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-            }
-            .disabled(controller.isScanning)
+            RefreshButton(isWorking: controller.isScanning, help: "Scan Again") { controller.scan() }
 
             if showsDumpster {
                 roundButton(help: "Open Dumpster", action: { DumpsterWindowController.shared.show() }) {
