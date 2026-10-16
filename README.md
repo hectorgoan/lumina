@@ -18,7 +18,9 @@ Requires macOS 26 or later.
 
 ## Utilities
 
-- **Appearance**: switch the system between Light and Dark mode.
+- **Appearance**: switch the system between Light and Dark mode. Two smaller layouts start hidden; show them in edit mode:
+  - **Compact Appearance**: just the Light and Dark previews, at half width.
+  - **Appearance Row**: the toggle and the previews in a single full-width row.
 - **Caffeine**: keep your Mac and its display awake while it's on, so neither sleep nor the screen saver kicks in.
 - **Stay Green**: keep chat apps like Microsoft Teams showing you as available while it's on. It tells macOS you're active every 30 seconds, without moving the pointer or needing extra permissions. Your display won't sleep while it's on.
 - **Pomodoro**: four 25-minute focus sessions with 5-minute breaks between them, then a 15-minute long break, repeated. You can change all three durations in its settings. Pause, skip or reset any step. Lumina chimes and posts a notification when a step ends and shows the countdown in the menu bar while a session is under way.
@@ -30,13 +32,17 @@ Requires macOS 26 or later.
 
   Temperature and fan speed come from the Mac's System Management Controller, which has no public API. Fan readings are hidden on Macs without fans.
 - **World Clock**: a half-width card per city with its flag, city code (MAD, NYC, TYO…), current time, day and night, and how far ahead or behind it is. Add as many as you like from edit mode. In a clock's settings (the gear badge), choose to show it in the menu bar too, as its own item with just the time or with the city code as well. Click a clock in the menu bar to see its day and offset, or to hide it.
+- **Batteries**: the charge of your Mac and its Bluetooth accessories (AirPods and their case, keyboards, mice, trackpads), the same devices macOS's own Batteries widget lists. Comes in four sizes: Small (1 device), Medium (2), Large (4) and Extra Large (a list of 6). By default it shows the devices with the lowest charge first; in its settings, change the size or choose devices yourself. Devices appear as they connect.
 
-Click **Edit Utilities** at the bottom of the panel to customize it:
+  The Mac's battery comes from a public API. Accessory levels come from `IOPSCopyPowerSourcesByType`, which IOKit exports but doesn't declare publicly.
+
+Click **Edit Utilities** at the bottom of the panel to customize it. The Library opens beside the panel:
 
 - Drag the modules to rearrange them.
-- Click the eye badge on a module to hide or show it. Hidden modules move to the bottom and only appear, dimmed, while editing.
+- Click the eye badge on a module to hide it; it moves to the Library. Bring it back with its **+** or by dragging it into the panel.
 - Click the gear badge to open a utility's settings, for utilities that have them.
-- Click **+ World Clock** to pick a city and add a clock for it. Search by city, country or code; use the arrow keys and Return, or click. Clocks show a remove badge (−) instead of the eye.
+- Under **Add New** in the Library, add a **Batteries** widget (pick a size and see it with your devices first) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
+- Search the Library by name.
 
 Lumina remembers your layout.
 

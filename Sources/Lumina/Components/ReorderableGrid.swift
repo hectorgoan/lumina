@@ -24,7 +24,10 @@ struct ReorderableGrid<Item: Identifiable, Content: View>: View {
                 let isLifted = drag.draggedID == item.id
 
                 content(item, isLifted)
-                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { drag.heights[item.id] = $0 }
+                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { height in
+                        // Publishing redraws the whole grid, so only on a real change.
+                        if drag.heights[item.id] != height { drag.heights[item.id] = height }
+                    }
                     // Attached to the tile itself so controls inside it
                     // (like edit badges) stay clickable.
                     .contentShape(Rectangle())
@@ -39,7 +42,9 @@ struct ReorderableGrid<Item: Identifiable, Content: View>: View {
                     .layoutValue(key: TileSpan.self, value: span(item))
             }
         }
-        .onGeometryChange(for: CGFloat.self, of: \.size.width) { drag.width = $0 }
+        .onGeometryChange(for: CGFloat.self, of: \.size.width) { width in
+            if drag.width != width { drag.width = width }
+        }
         .coordinateSpace(.named(coordinateSpace))
     }
 
