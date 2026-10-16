@@ -14,8 +14,9 @@ struct PanelView: View {
                 // The panel widens before the library fades in, and narrows
                 // after it fades out, so the window only animates its size
                 // while the glass there is empty.
-                UtilityLibrary()
+                sidebar
                     .frame(width: 230)
+                    .background(Color.panelSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .fadesWithoutColorShift()
                     .opacity(store.isLibraryPresented ? 1 : 0)
                     .padding(.leading, 12)
@@ -26,6 +27,24 @@ struct PanelView: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(12)
         .onDisappear { store.isEditing = false }
+    }
+
+    /// Edit mode's sidebar. It stays while a settings or add page is open;
+    /// only what's in it changes: the Library crossfades into a preview of
+    /// the tile as the panel resizes for the page, and back again.
+    private var sidebar: some View {
+        ZStack(alignment: .top) {
+            UtilityLibrary()
+                .fadesWithoutColorShift()
+                .opacity(store.isConfiguring ? 0 : 1)
+                .allowsHitTesting(!store.isConfiguring)
+
+            if store.isConfiguring {
+                UtilityPreview()
+                    .fadesWithoutColorShift()
+                    .transition(.opacity)
+            }
+        }
     }
 
     /// The current page, with the footer pinned to the bottom of the panel

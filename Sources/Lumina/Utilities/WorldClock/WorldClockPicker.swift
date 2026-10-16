@@ -59,6 +59,8 @@ struct WorldClockPicker: View {
         }
         .onAppear { isSearchFocused = true }
         .onChange(of: search.query) { search.selection = 0 }
+        // Edit mode's sidebar previews the highlighted city.
+        .onChange(of: highlightedCode, initial: true) { _, code in store.previewCityCode = code }
     }
 
     private var searchField: some View {
@@ -100,6 +102,10 @@ struct WorldClockPicker: View {
             .compactMap(WorldClockCity.city(withCode:))
             .prefix(Self.maximumResults / 2)
             .map { $0 }
+    }
+
+    private var highlightedCode: String? {
+        results.indices.contains(search.selection) ? results[search.selection].code : nil
     }
 
     private func moveSelection(by step: Int) -> KeyPress.Result {

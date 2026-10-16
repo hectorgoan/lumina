@@ -93,8 +93,8 @@ Click **Edit Utilities** at the bottom of the panel to customize it. The Library
 
 - Drag the modules to rearrange them.
 - Click the eye badge on a module to hide it; it moves to the Library. Bring it back with its **+** or by dragging it into the panel.
-- Click the gear badge to open a utility's settings, for utilities that have them.
-- Under **Add New** in the Library, add a **Batteries** widget (pick a size and see it with your devices first) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
+- Click the gear badge to open a utility's settings, for utilities that have them. While a settings or add page is open, the Library makes way for a live preview of the tile, and comes back when you go back.
+- Under **Add New** in the Library, add a **Batteries** widget (pick a size and see it with your devices in the preview) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
 - Search the Library by name.
 
 Lumina remembers your layout.

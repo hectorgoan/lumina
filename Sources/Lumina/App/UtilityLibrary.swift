@@ -51,7 +51,6 @@ struct UtilityLibrary: View {
         }
         .padding(12)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color.panelSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var searchField: some View {
