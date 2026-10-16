@@ -28,7 +28,10 @@ struct BatteryWidgetPicker: View {
             // Short labels: the full names don't fit the panel's width.
             FullWidthSegmentedPicker(
                 options: BatteryWidget.Size.allCases.map { ($0.shortTitle, $0) },
-                selection: Binding(get: { selection.size }, set: selection.choose)
+                // A closure rather than `set: selection.choose`: passing the
+                // main-actor method directly crashes Swift 6.3's compiler
+                // (used by the release workflow) while it generates code.
+                selection: Binding(get: { selection.size }, set: { selection.choose($0) })
             )
             .accessibilityLabel("Size")
 
