@@ -16,7 +16,7 @@ A SwiftUI macOS menu bar app (`MenuBarExtra`, window style) that hosts focus uti
   - stamps `CFBundleVersion` with a timestamp, so macOS caches (like Notification Center's icon) refresh;
   - signs with the "Lumina Development" self-signed identity, falling back to ad hoc. A stable identity keeps Accessibility and Automation permissions across rebuilds;
   - runs `lsregister`.
-- `scripts/setup-release-secrets.sh` (one-time, already done) sets the GitHub secrets and the Sparkle public key. `scripts/render-marketing.sh` regenerates `docs/marketing` (heroes, `x-overview.png`, `features/*.png`) and the README's feature gallery (between `<!-- features:start/end -->`). Features are derived from `Utility.catalog` + `LibraryDrag.NewItem`; **when adding a utility, add its card to `Feature.all` in `scripts/marketing/main.swift`** (the script warns otherwise). The hero layout (`heroTiles`) mirrors the user's own panel; battery devices are fixed demo devices.
+- `scripts/setup-release-secrets.sh` (one-time, already done) sets the GitHub secrets and the Sparkle public key. `scripts/render-marketing.sh` regenerates `docs/marketing` (heroes, `x-overview.png`, `features/*.png`, plus half-size JPEGs in `readme/` that the README shows) and the README's feature gallery (between `<!-- features:start/end -->`). Features are derived from `Utility.catalog` + `LibraryDrag.NewItem`; **when adding a utility, add its card to `Feature.all` in `scripts/marketing/main.swift`** (the script warns otherwise). The hero layout (`heroTiles`) mirrors the user's own panel, and `heroLayout()` appends a tile for any feature it doesn't show yet (the canvas grows to fit); battery devices are fixed demo devices.
 
 ## Git flow (the user wants this followed)
 
@@ -40,7 +40,7 @@ A SwiftUI macOS menu bar app (`MenuBarExtra`, window style) that hosts focus uti
   - `Poof` (the Dock poof, via a `dlsym` lookup of `NSShowAnimationEffect`).
 - `App/`:
   - `PanelView`: the main column (grid, settings, add pages) plus `UtilityLibrary` (edit-mode sidebar) and the footer.
-  - `MenuBarIcon`: the rays icon, drawn as one template image, with a Caffeine sun and a Stay Green dot, plus the Pomodoro time.
+  - `MenuBarIcon`: the rays icon (drawn rays, so the Stay Green dot can replace one), with a Caffeine sun, the Stay Green indicator chosen in its settings (`StayGreenIndicator`: none/dot/halo/rays, optionally green) and the Pomodoro time. Everything must stay inside the 22 × 18 canvas, since the menu bar crops to it. Monochrome states are one template image; a green indicator is drawn by an `NSImage` drawing handler that tints the ink layer with `labelColor` at draw time and draws the green layer on top.
   - `UpdateController`: Sparkle, with update reminders shown as an in-panel banner. It checks at launch and every 6 h.
 
 ### The panel's animation rules (learned the hard way)
@@ -60,6 +60,7 @@ A SwiftUI macOS menu bar app (`MenuBarExtra`, window style) that hosts focus uti
 - **Keyboard Lock:** a `CGEvent` tap, which needs Accessibility.
 - **Quit All:** `NSRunningApplication.terminate()` with a keep-open list.
 - **System / System List / CPU Focus:** `host_processor_info`, VM stats, and the SMC (private, `Utilities/SystemStatus/SMC.swift`) for temperature (`Tp*`/`Te*` keys) and fans.
+- **Cleanup:** `CleanupCategory` (what and where), `CleanupScanner` (nonisolated: scans and removes, run in detached tasks), `CleanupController` (phases, persisted choices, two-click confirm, scan interval or manual scans; it only scans when the panel opens, never in the background). User folders only; Trash/Mail need Full Disk Access (detected by listing `~/.Trash`). Never run a real clean while testing: point `CleanupScanner` at a fake home.
 - **World clocks:** `WorldClockCity.all` has 458 validated cities (every UN capital). The menu bar items are `NSStatusItem`s, and the city tag is an `NSTextAttachment` drawn in `labelColor`.
 - **Batteries:** the Mac's battery via `IOPSCopyPowerSourcesInfo`, accessories via `dlsym("IOPSCopyPowerSourcesByType")(4)`. Comes in S/M/L/XL.
 

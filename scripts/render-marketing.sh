@@ -5,7 +5,8 @@
 # into a small renderer and runs it. New utilities get a card automatically;
 # the renderer warns when one has no copy yet.
 # It turns on Caffeine and Stay Green while it runs and samples the system
-# monitor for about 45 seconds, so the CPU graph has history.
+# monitor for about 45 seconds, so the CPU graph has history. It builds with
+# MARKETING defined, which lets it show sample Cleanup results.
 # Usage: scripts/render-marketing.sh
 set -euo pipefail
 
@@ -16,7 +17,8 @@ FRAMEWORKS="$(swift build -c release --show-bin-path)"
 RENDERER="$(mktemp -d)/render"
 
 find Sources/Lumina -name "*.swift" ! -name "LuminaApp.swift" -print0 \
-    | xargs -0 swiftc -O -swift-version 6 -module-name LuminaRender scripts/marketing/main.swift \
+    | xargs -0 swiftc -O -swift-version 6 -D MARKETING -module-name LuminaRender scripts/marketing/main.swift \
         -F "$FRAMEWORKS" -framework Sparkle -Xlinker -rpath -Xlinker "$FRAMEWORKS" -o "$RENDERER"
 
-"$RENDERER" "$PWD"
+# English formatting ("5.6 GB", "Fri", 24-hour time, °C), whatever this Mac's region.
+"$RENDERER" "$PWD" -AppleLocale en_GB
