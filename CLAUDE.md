@@ -40,7 +40,7 @@ A SwiftUI macOS menu bar app (`MenuBarExtra`, window style) that hosts focus uti
   - `Poof` (the Dock poof, via a `dlsym` lookup of `NSShowAnimationEffect`).
 - `App/`:
   - `PanelView`: the main column (grid, settings, add pages) plus `UtilityLibrary` (edit-mode sidebar) and the footer.
-  - `MenuBarIcon`: the rays icon, drawn as one template image, with a Caffeine sun and a Stay Green dot, plus the Pomodoro time.
+  - `MenuBarIcon`: the rays icon (drawn rays, so the Stay Green dot can replace one), with a Caffeine sun, the Stay Green indicator chosen in its settings (`StayGreenIndicator`: none/dot/halo/rays, optionally green) and the Pomodoro time. Everything must stay inside the 22 × 18 canvas, since the menu bar crops to it. Monochrome states are one template image; a green indicator is drawn by an `NSImage` drawing handler that tints the ink layer with `labelColor` at draw time and draws the green layer on top.
   - `UpdateController`: Sparkle, with update reminders shown as an in-panel banner. It checks at launch and every 6 h.
 
 ### The panel's animation rules (learned the hard way)

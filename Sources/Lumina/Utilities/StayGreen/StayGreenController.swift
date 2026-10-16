@@ -1,5 +1,52 @@
+import Foundation
 import IOKit.pwr_mgt
 import Observation
+
+/// How Lumina's menu bar icon shows that Stay Green is on.
+struct StayGreenIndicator: Equatable {
+    enum Shape: String, CaseIterable {
+        /// The icon doesn't change.
+        case none
+        /// A dot in place of the bottom-right ray.
+        case dot
+        /// A ring between the rays and the center.
+        case halo
+        /// The rays themselves; only shows in green.
+        case rays
+
+        var title: String {
+            switch self {
+            case .none: "None"
+            case .dot: "Dot"
+            case .halo: "Halo"
+            case .rays: "Rays"
+            }
+        }
+    }
+
+    var shape: Shape = .halo
+    var prefersGreen = true
+
+    /// Whether it's drawn in green. Rays always are: in the icon's own
+    /// color they'd look the same as when Stay Green is off.
+    var isGreen: Bool { shape == .rays || (prefersGreen && shape != .none) }
+
+    /// For example "Green Halo".
+    var title: String {
+        isGreen ? "Green \(shape.title)" : shape.title
+    }
+
+    /// For example "A green ring around the center".
+    var summary: String {
+        let color = isGreen ? "green " : ""
+        switch shape {
+        case .none: return "The icon doesn’t change"
+        case .dot: return "A \(color)dot in place of a ray"
+        case .halo: return "A \(color)ring around the center"
+        case .rays: return "The rays turn green"
+        }
+    }
+}
 
 /// Keeps chat apps such as Microsoft Teams showing you as available.
 ///
@@ -17,10 +64,32 @@ final class StayGreenController {
 
     private(set) var isActive = false
 
+    /// How the menu bar icon shows Stay Green is on.
+    var indicator: StayGreenIndicator {
+        didSet {
+            defaults.set(indicator.shape.rawValue, forKey: Self.shapeKey)
+            defaults.set(indicator.prefersGreen, forKey: Self.greenKey)
+        }
+    }
+
     @ObservationIgnored private var assertionID: IOPMAssertionID = 0
     @ObservationIgnored private var heartbeat: Task<Void, Never>?
+    @ObservationIgnored private let defaults = UserDefaults.standard
 
-    private init() {}
+    private static let shapeKey = "stayGreen.indicatorShape"
+    private static let greenKey = "stayGreen.indicatorIsGreen"
+
+    private init() {
+        let defaults = UserDefaults.standard
+        var indicator = StayGreenIndicator()
+        if let shape = defaults.string(forKey: Self.shapeKey).flatMap(StayGreenIndicator.Shape.init) {
+            indicator.shape = shape
+        }
+        if defaults.object(forKey: Self.greenKey) != nil {
+            indicator.prefersGreen = defaults.bool(forKey: Self.greenKey)
+        }
+        self.indicator = indicator
+    }
 
     func toggle() {
         isActive ? deactivate() : activate()

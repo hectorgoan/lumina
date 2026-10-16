@@ -121,7 +121,7 @@ struct Feature {
         Feature(
             slug: "stay-green", name: "Stay Green", symbol: "person.crop.circle.badge.checkmark", tint: .green,
             headline: "Always available.",
-            detail: "Keeps you active in Slack, Teams and other chat apps by telling macOS you’re still there. No mouse jiggling and no extra permissions.",
+            detail: "Keeps you active in Slack, Teams and other chat apps by telling macOS you’re still there. No mouse jiggling, no extra permissions, and a green halo in the menu bar while it’s on.",
             utilityIDs: ["stayGreen"],
             tiles: [.utility("stayGreen")],
             menuBar: MenuBarStatus(isCaffeinated: false, isStayingGreen: true)
