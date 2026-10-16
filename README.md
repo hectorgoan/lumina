@@ -4,7 +4,7 @@
 
 <h1 align="center">Lumina</h1>
 
-<p align="center">A macOS menu bar app that hosts small utilities to help you focus, styled like a Control Center applet.</p>
+<p align="center">Focus tools and a tidy Mac, in one fast, configurable menu bar panel styled like Control Center.</p>
 
 <p align="center">
   <a href="docs/marketing/hero-dark.png">
@@ -106,6 +106,14 @@ Click **Edit Utilities** at the bottom of the panel to customize it. The Library
 - Click the gear badge to open a utility's settings, for utilities that have them. While a settings or add page is open, the Library makes way for a live preview of the tile, and comes back when you go back.
 - Under **Add New** in the Library, add a **Batteries** widget (pick a size and see it with your devices in the preview) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
 - Search the Library by name.
+
+Utilities you want set up and ready, but not always on show, go in the **More** section: in edit mode, drag them below its header. Outside edit mode the section stays closed until you open it. In its settings (the gear badge on its header in edit mode, a right-click on the section, or **More Section Settings…** in the **…** menu), choose how it looks:
+
+- **Row** (the default): a row under your utilities with their icons; click to open it below.
+- **Pages**: a second page of tiles; click the dots to switch.
+- **Stack**: a stack of cards that fans out when clicked.
+
+You can also rename it, and have it remember whether it was open.
 
 Lumina remembers your layout.
 

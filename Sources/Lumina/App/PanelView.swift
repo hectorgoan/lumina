@@ -30,6 +30,7 @@ struct PanelView: View {
         .onDisappear {
             store.isPanelOpen = false
             store.isEditing = false
+            if !store.remembersMoreOpen { store.isMoreOpen = false }
             // The Uninstaller starts over next time, unless it's mid-way
             // through moving things to the Trash.
             if !UninstallerController.shared.isWorking { store.uninstallerPage = nil }
@@ -78,6 +79,8 @@ struct PanelView: View {
             WorldClockPicker()
         } else if store.isAddingBatteryWidget {
             BatteryWidgetPicker()
+        } else if store.isMoreSettingsOpen {
+            MoreSettingsPage()
         } else if let page = store.uninstallerPage {
             UninstallerPageView(page: page, controller: .shared)
         } else {
@@ -109,7 +112,7 @@ private struct UtilityGrid: View {
                 // Its space opens and closes with the panel's resize, so the
                 // utilities glide down and back up; the text itself fades with
                 // the library.
-                Text("Drag to rearrange. Hidden utilities wait in the Library.")
+                Text("Drag to rearrange, or into \(store.moreTitle) to tuck utilities away. Hidden ones wait in the Library.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
@@ -126,26 +129,59 @@ private struct UtilityGrid: View {
                     .padding(.vertical, 16)
             }
 
+            // One grid in every mode, the More section's header included,
+            // so opening it and entering edit mode reuse the panel's usual
+            // steps; in edit mode, dragging a tile past the header moves it
+            // into the section.
             ReorderableGrid(
                 items: Binding(
-                    get: { store.visibleUtilities },
-                    set: { store.reorder($0) }
+                    get: { store.panelGridItems },
+                    set: { store.applyPanelGridOrder($0) }
                 ),
                 isEditing: store.showsEditControls,
                 spacing: 10,
-                span: \.size.span
-            ) { utility, isLifted in
-                ModuleTile(isEditing: store.showsEditControls, isLifted: isLifted) {
-                    utility.content()
-                } badges: {
-                    badges(for: utility)
+                span: \.span,
+                canDrag: { $0.utility != nil }
+            ) { item, isLifted in
+                switch item {
+                case .utility(let utility):
+                    tile(utility, isLifted: isLifted)
+                case .moreHeader:
+                    if store.isLibraryExpanded {
+                        MoreEditHeader()
+                            .fadesWithoutColorShift()
+                            .opacity(store.isLibraryPresented ? 1 : 0)
+                            .anchorPreference(key: MoreSectionBounds.self, value: .bounds) { [$0] }
+                    } else {
+                        MoreHeader()
+                            .fadesWithoutColorShift()
+                            .opacity(store.isEditing ? 0 : 1)
+                    }
+                case .moreHint:
+                    MoreDropHint()
+                        .opacity(store.isLibraryPresented ? 1 : 0)
+                        .anchorPreference(key: MoreSectionBounds.self, value: .bounds) { [$0] }
                 }
-                // Tiles being added or removed fade while the grid makes or
-                // closes their space.
-                .opacity(store.fadingUtilityIDs.contains(utility.id) ? 0 : 1)
-                .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { frame in
-                    tileFrames.rects[utility.id] = frame
+            }
+            // Outlines the section in edit mode.
+            .overlayPreferenceValue(MoreSectionBounds.self) { anchors in
+                GeometryReader { proxy in
+                    if let first = anchors.first {
+                        let rect = anchors.dropFirst().reduce(proxy[first]) { $0.union(proxy[$1]) }.insetBy(dx: -6, dy: -6)
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                            .frame(width: rect.width, height: rect.height)
+                            .position(x: rect.midX, y: rect.midY)
+                            .opacity(store.isLibraryPresented ? 1 : 0)
+                    }
                 }
+                .allowsHitTesting(false)
+            }
+
+            if store.moreStyle == .pages && !store.moreUtilities.isEmpty && !store.isLibraryExpanded {
+                MorePageDots()
+                    .fadesWithoutColorShift()
+                    .opacity(store.isEditing ? 0 : 1)
             }
 
         }
@@ -168,6 +204,33 @@ private struct UtilityGrid: View {
                 .animation(.snappy, value: drop.isTargeted)
                 .allowsHitTesting(false)
         }
+    }
+
+    private func tile(_ utility: Utility, isLifted: Bool) -> some View {
+        let isInMore = store.moreUtilities.contains { $0.id == utility.id }
+        return ModuleTile(isEditing: store.showsEditControls, isLifted: isLifted) {
+            utility.content()
+        } badges: {
+            badges(for: utility)
+        }
+        // Tiles being added or removed fade while the grid makes or closes
+        // their space; so do the section's while it opens or closes.
+        .opacity(store.fadingUtilityIDs.contains(utility.id) || (isInMore && isMoreTileHidden) ? 0 : 1)
+        .anchorPreference(key: MoreSectionBounds.self, value: .bounds) { isInMore && store.isLibraryExpanded ? [$0] : [] }
+        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { frame in
+            tileFrames.rects[utility.id] = frame
+        }
+    }
+
+    /// Whether the section's tiles are invisible right now: while it opens
+    /// or closes, and in edit mode while the Library fades in or out, if
+    /// they weren't showing already.
+    private var isMoreTileHidden: Bool {
+        if store.isLibraryExpanded {
+            let wasShowing = store.isMoreOpen && store.moreStyle != .pages
+            return !store.isLibraryPresented && !wasShowing
+        }
+        return store.isMoreFading
     }
 
     private func badges(for utility: Utility) -> some View {
@@ -346,6 +409,7 @@ private struct PanelFooter: View {
             Menu {
                 Button("About Lumina", action: AboutPanel.show)
                 Button("Check for Updates…", action: UpdateController.shared.checkForUpdates)
+                Button("\(store.moreTitle) Section Settings…") { store.openMoreSettings() }
                     .disabled(!UpdateController.shared.canCheckForUpdates)
                 Divider()
                 Button("Quit Lumina") { NSApp.terminate(nil) }
@@ -379,8 +443,9 @@ private struct PanelFooter: View {
                     withAnimation(Motion.present) { store.isEditing = false }
                 }
             }
-        } else if UpdateController.shared.availableVersion != nil {
-            // Fade the banner out first, so its space closes while empty.
+        } else if UpdateController.shared.availableVersion != nil || !store.moreUtilities.isEmpty {
+            // Fade the banner and the More section's header out first, so
+            // their space changes while empty.
             withAnimation(Motion.dismiss, completionCriteria: .removed) {
                 store.isEditing = true
             } completion: {
@@ -395,6 +460,8 @@ private struct PanelFooter: View {
 
     private func expandForEditing() {
         withAnimation(Motion.resize, completionCriteria: .removed) {
+            // Edit mode shows both pages at once.
+            if store.moreStyle == .pages { store.isMoreOpen = false }
             store.isLibraryExpanded = true
         } completion: {
             withAnimation(Motion.present) { store.isLibraryPresented = true }
