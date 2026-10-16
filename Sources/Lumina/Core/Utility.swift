@@ -56,6 +56,7 @@ extension Utility {
         .pomodoro,
         .keyboardLock,
         .quitAll,
+        .cleanup,
         .systemStatus,
         .systemList,
         .cpuFocus,

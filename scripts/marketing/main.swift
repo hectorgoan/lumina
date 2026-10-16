@@ -183,6 +183,13 @@ struct Feature {
             accessory: .keepOpen
         ),
         Feature(
+            slug: "cleanup", name: "Cleanup", symbol: "sparkles", tint: .purple,
+            headline: "Junk out, space back.",
+            detail: "Finds app caches, Xcode build data, logs and the Trash, shows what each takes, and clears them in one click. Choose what gets cleaned in its settings.",
+            utilityIDs: ["cleanup"],
+            tiles: [.utility("cleanup")]
+        ),
+        Feature(
             slug: "customize", name: "Customize", symbol: "square.grid.2x2.fill", tint: .purple,
             headline: "Make it yours.",
             detail: "Drag tiles into any order, hide the ones you don’t need, and add world clocks and batteries from the Library.",
@@ -924,6 +931,8 @@ MainActor.assumeIsolated {
     CaffeineController.shared.toggle()
     StayGreenController.shared.toggle()
     SystemMonitor.shared.attach()
+    // Only looks: the tile shows what this Mac has to clean.
+    CleanupController.shared.scan()
     _ = AppearanceController.shared
 }
 // Let the monitors fill most of the CPU graph's one-minute history.
