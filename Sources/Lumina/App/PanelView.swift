@@ -14,10 +14,20 @@ struct PanelView: View {
                 // The panel widens before the library fades in, and narrows
                 // after it fades out, so the window only animates its size
                 // while the glass there is empty.
-                UtilityLibrary()
-                    .frame(width: 230)
-                    .fadesWithoutColorShift()
-                    .opacity(store.isLibraryPresented ? 1 : 0)
+                // While a settings or add page is open, the Library gives
+                // way to a preview of the tile. It swaps along with the page:
+                // both fade out, change while the panel resizes, fade in.
+                Group {
+                    if store.isConfiguring {
+                        UtilityPreview()
+                    } else {
+                        UtilityLibrary()
+                    }
+                }
+                .transition(.identity)
+                .frame(width: 230)
+                .fadesWithoutColorShift()
+                .opacity(store.isLibraryPresented && store.isPageVisible ? 1 : 0)
                     .padding(.leading, 12)
                     .frame(width: store.isLibraryExpanded ? 242 : 0, alignment: .leading)
                     .clipped()

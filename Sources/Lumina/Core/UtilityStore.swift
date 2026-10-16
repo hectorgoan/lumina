@@ -71,6 +71,18 @@ final class UtilityStore {
     /// Whether the battery widget size picker is open.
     var isAddingBatteryWidget = false
 
+    /// The size chosen on the battery widget add page.
+    var newBatteryWidgetSize: BatteryWidget.Size = .large
+
+    /// The city highlighted on the world clock add page.
+    var previewCityCode: String?
+
+    /// Whether a settings or add page is open, so edit mode's sidebar shows
+    /// a preview instead of the Library.
+    var isConfiguring: Bool {
+        settingsUtilityID != nil || isAddingWorldClock || isAddingBatteryWidget
+    }
+
     @ObservationIgnored private let defaults: UserDefaults
 
     init(catalog: [Utility] = Utility.catalog, defaults: UserDefaults = .standard) {
