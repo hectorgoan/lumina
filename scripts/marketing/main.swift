@@ -873,10 +873,17 @@ struct Overview: View {
 func save<V: View>(_ view: V, _ url: URL, scale: CGFloat = 2) {
     let renderer = ImageRenderer(content: view)
     renderer.scale = scale
-    guard let image = renderer.nsImage,
-          let rep = NSBitmapImageRep(data: image.tiffRepresentation!),
-          let png = rep.representation(using: .png, properties: [:])
+    // Some views make ImageRenderer switch to a 16-bit, wide-range image,
+    // which comes out washed out as a PNG. Always flatten to 8-bit sRGB.
+    guard let image = renderer.cgImage,
+          let context = CGContext(
+              data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: 0,
+              space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+          )
     else { print("failed \(url.lastPathComponent)"); return }
+    context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    let rep = NSBitmapImageRep(cgImage: context.makeImage()!)
+    let png = rep.representation(using: .png, properties: [:])!
     try! png.write(to: url)
     print("wrote \(url.path.replacingOccurrences(of: root.path + "/", with: "")) \(rep.pixelsWide)x\(rep.pixelsHigh)")
 }
