@@ -28,6 +28,8 @@ final class DumpsterWindowController: NSObject, NSWindowDelegate {
             panel.center()
             window = panel
         }
+        // The Dumpster takes over from the panel: you drag from Finder next.
+        MenuBarPanel.close()
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
     }

@@ -23,6 +23,13 @@ enum MenuBarPanel {
         return click(item)
     }
 
+    /// Closes the panel, by clicking Lumina's item again as a person would,
+    /// so SwiftUI knows it's closed.
+    static func close() {
+        guard store?.isPanelOpen == true, canOpen, let item = luminaItem() else { return }
+        _ = click(item)
+    }
+
     /// Asks for the Accessibility permission, showing macOS's prompt.
     static func requestPermission() {
         let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
