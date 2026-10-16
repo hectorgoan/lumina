@@ -84,6 +84,33 @@ let heroTiles: [Tile] = [
     .utility("quitAll"),
 ]
 
+/// The hero's panel: `heroTiles`, plus a tile for every feature it doesn't
+/// show yet, added at the end the way the app adds new utilities. So a new
+/// utility shows up in the hero on the next run.
+@MainActor
+func heroLayout() -> [Tile] {
+    var utilityIDs = Set<String>()
+    var hasClock = false, hasBatteries = false
+    for tile in heroTiles {
+        switch tile {
+        case .utility(let id): utilityIDs.insert(id)
+        case .clock: hasClock = true
+        case .batteries: hasBatteries = true
+        }
+    }
+    var tiles = heroTiles
+    // Edit mode isn't a tile.
+    for feature in Feature.everything where !feature.isEditing {
+        let isShown = !utilityIDs.isDisjoint(with: feature.utilityIDs)
+            || (feature.newItem == .worldClock && hasClock)
+            || (feature.newItem == .batteries && hasBatteries)
+        if !isShown, let tile = feature.tiles.first {
+            tiles.append(tile)
+        }
+    }
+    return tiles
+}
+
 // MARK: - Features
 
 /// A feature with its own card in docs/marketing/features and the README.
@@ -973,13 +1000,22 @@ MainActor.assumeIsolated {
     try? FileManager.default.removeItem(at: readmeImages)
     try! FileManager.default.createDirectory(at: featuresDirectory, withIntermediateDirectories: true)
 
-    let hero = CGSize(width: 1440, height: 900)
+    // 16:10, at least 1440 × 900 points, and tall enough for the panel
+    // under the menu bar: as tiles are added, the desktop grows (and so
+    // looks smaller) rather than cutting the panel off. Always 2880 pixels
+    // wide.
+    let panelHeight = NSHostingView(rootView: Panel(
+        store: makeStore(heroLayout()), dark: true, wallpaperSize: .zero, origin: .zero
+    ).fixedSize()).fittingSize.height
+    let heroHeight = max(900, (panelHeight + 32 + 9 + 40).rounded(.up))
+    let hero = CGSize(width: heroHeight * 1.6, height: heroHeight)
     for dark in [true, false] {
         useAppearance(dark: dark)
         let name = "hero-\(dark ? "dark" : "light")"
         save(
-            Hero(store: makeStore(heroTiles), dark: dark, size: hero),
+            Hero(store: makeStore(heroLayout()), dark: dark, size: hero),
             marketing.appendingPathComponent("\(name).png"),
+            scale: 2880 / hero.width,
             readmeCopy: readmeImages.appendingPathComponent("\(name).jpg")
         )
     }

@@ -11,7 +11,7 @@
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="docs/marketing/readme/hero-dark.jpg">
       <source media="(prefers-color-scheme: light)" srcset="docs/marketing/readme/hero-light.jpg">
-      <img src="docs/marketing/readme/hero-dark.jpg" alt="Lumina's panel open below its menu bar icon, with CPU Focus, Caffeine, Stay Green, a world clock, two battery widgets, Pomodoro, Appearance, Keyboard Lock and Quit All" width="100%">
+      <img src="docs/marketing/readme/hero-dark.jpg" alt="Lumina's panel open below its menu bar icon, with CPU Focus, Caffeine, Stay Green, a world clock, two battery widgets, Pomodoro, Appearance, Keyboard Lock, Quit All and Cleanup" width="100%">
     </picture>
   </a>
 </p>
@@ -173,7 +173,7 @@ They're rendered from the app's real views, so regenerate them after changing th
 scripts/render-marketing.sh
 ```
 
-The script compiles Lumina's sources, minus its `@main`, together with `scripts/marketing/main.swift` into a small renderer. It also rewrites the gallery between the `features` markers in this README. That file holds the scenes, layouts and copy; `Feature.all` lists each feature's card. Features come from the app, `Utility.catalog` and the Library's **Add New** items, so a new utility gets a card (and a pill in the hero) on the next run. Until it has an entry in `Feature.all`, its card is plain and the script prints a warning.
+The script compiles Lumina's sources, minus its `@main`, together with `scripts/marketing/main.swift` into a small renderer. It also rewrites the gallery between the `features` markers in this README. That file holds the scenes, layouts and copy; `Feature.all` lists each feature's card. Features come from the app, `Utility.catalog` and the Library's **Add New** items, so a new utility gets a card, a pill in the hero and a tile at the end of the hero's panel on the next run. The hero's desktop grows as needed so the panel always fits. Until it has an entry in `Feature.all`, its card is plain and the script prints a warning.
 
 While it runs it turns on Caffeine and Stay Green and samples the system monitor for about 45 seconds, so the CPU graph has history. System readings and clock times are live; battery devices and Cleanup's results are fixed samples (the renderer builds with `MARKETING` defined for that). The light hero sets only the renderer's own appearance, never the system's.
 
