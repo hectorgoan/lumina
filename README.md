@@ -77,7 +77,7 @@ Requires macOS 26 or later.
   - **Mail Attachments** (off by default, needs Full Disk Access): Mail's downloaded copies.
 
   Everything except old downloads is deleted rather than moved to the Trash. Cleanup never touches system folders, which would need administrator rights.
-- **Uninstaller**: removes an app and everything it left in your Library: its Application Support files, caches, containers, preferences, launch agents, saved state, web data and logs. Everything goes to the Trash, so **Put Back** undoes it.
+- **Uninstaller**: removes an app and everything it left in your Library: its Application Support files, caches, containers, preferences, launch agents, saved state, web data and logs. Everything goes to the Trash, so **Put Back** undoes it, or click **Empty Trash** to free the space at once (it empties everything in the Trash). macOS doesn't let apps remove other apps, so Lumina asks Finder to move app bundles to the Trash; the first time, macOS asks to let Lumina control Finder.
   - The tile shows your largest apps not opened in a while (3 months to a year, set in its settings) and a search field for any app.
   - Review what's found before anything moves, grouped by kind with sizes; uncheck a group, or open it to see each file. Apps that are open are quit first.
   - Open the **Dumpster** from the tile: a small window that stays above Finder, to drag several apps into at once.

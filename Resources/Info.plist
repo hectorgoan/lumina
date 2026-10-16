@@ -29,7 +29,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Lumina uses System Events to switch between Light and Dark appearance.</string>
+	<string>Lumina uses System Events to switch between Light and Dark appearance, and Finder to move apps you uninstall to the Trash and to empty it.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Héctor Go. An. MIT License.</string>
 	<key>SUEnableAutomaticChecks</key>

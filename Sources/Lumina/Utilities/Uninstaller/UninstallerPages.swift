@@ -499,7 +499,7 @@ struct UninstallDonePage: View {
 
             if let result = controller.result {
                 VStack(spacing: 10) {
-                    Image(systemName: result.isPutBack ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
+                    Image(systemName: result.isPutBack ? "arrow.uturn.backward.circle.fill" : result.isTrashEmptied ? "trash.circle.fill" : "checkmark.circle.fill")
                         .font(.system(size: 40))
                         .foregroundStyle(.white, result.isPutBack ? Color.accentColor : .green)
                         .contentTransition(.symbolEffect(.replace))
@@ -518,15 +518,26 @@ struct UninstallDonePage: View {
                         if result.putBackFailed {
                             Button("Open Trash", action: controller.openTrash)
                                 .buttonStyle(.glass)
-                        } else if !result.isPutBack && !result.moved.isEmpty {
+                        } else if !result.isPutBack && !result.isTrashEmptied && !result.moved.isEmpty {
                             Button("Put Back", action: controller.putBack)
                                 .buttonStyle(.glass)
+                            Button(action: controller.emptyTrashTapped) {
+                                Text(controller.awaitsEmptyConfirmation ? "Empty Trash?" : "Empty Trash")
+                                    .contentTransition(.interpolate)
+                            }
+                            .buttonStyle(.glassProminent)
+                            .tint(controller.awaitsEmptyConfirmation ? .red : .secondary)
+                            .help(controller.awaitsEmptyConfirmation
+                                  ? "Click again to remove everything in the Trash for good"
+                                  : "Free the space now. Empties everything in the Trash.")
                         }
                         Button("Done", action: controller.backToGrid)
                             .buttonStyle(.glassProminent)
                             .keyboardShortcut(.defaultAction)
                     }
+                    .disabled(controller.isWorking)
                     .padding(.top, 4)
+                    .animation(.snappy(duration: 0.2), value: controller.awaitsEmptyConfirmation)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
@@ -538,11 +549,13 @@ struct UninstallDonePage: View {
     }
 
     private func detail(_ result: UninstallResult) -> String {
+        if result.isTrashEmptied { return "The Trash was emptied, freeing \(CleanupFormat.bytes(result.bytes))." }
         if result.isPutBack { return "Everything is back where it was." }
+        if result.emptyFailed { return "The Trash couldn’t be emptied. Empty it from Finder instead." }
         if result.putBackFailed {
             return "Some items couldn’t be put back. Open the Trash and use Put Back there."
         }
-        var text = "\(CleanupFormat.bytes(result.bytes)) in \(result.moved.count) items. Empty the Trash to free the space."
+        var text = "\(CleanupFormat.bytes(result.bytes)) in \(result.moved.count) items. Empty the Trash to free the space; that removes everything in it."
         if !result.failures.isEmpty {
             text += " Couldn’t move: \(ListFormatter.localizedString(byJoining: result.failures))."
         }

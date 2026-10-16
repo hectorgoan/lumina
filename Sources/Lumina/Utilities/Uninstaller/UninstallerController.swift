@@ -58,9 +58,12 @@ struct UninstallResult {
     var failures: [String] = []
     var putBackFailed = false
     var isPutBack = false
+    var isTrashEmptied = false
+    var emptyFailed = false
 
     var title: String {
         let subject = names.count == 1 ? names[0] : "\(names.count) apps"
+        if isTrashEmptied { return "\(subject) Removed" }
         return isPutBack ? "\(subject) Put Back" : "\(subject) Moved to the Trash"
     }
 }
@@ -377,9 +380,15 @@ final class UninstallerController: NSObject {
             var moved: [URL: URL] = [:]
             for item in items {
                 // One at a time, so one failure doesn't stop the rest.
-                do {
-                    moved.merge(try await NSWorkspace.shared.recycle([item.url])) { $1 }
-                } catch {
+                var trashed = (try? await NSWorkspace.shared.recycle([item.url]))?.values.first
+                // macOS keeps apps from removing other apps, so an app can
+                // still be there; Finder may move it.
+                if FileManager.default.fileExists(atPath: item.url.path) {
+                    trashed = await FinderScript.trash(item.url)
+                }
+                if let trashed, !FileManager.default.fileExists(atPath: item.url.path) {
+                    moved[item.url] = trashed
+                } else {
                     failures.append(item.url.lastPathComponent)
                 }
             }
@@ -400,20 +409,57 @@ final class UninstallerController: NSObject {
 
     /// Moves everything back from the Trash to where it was.
     func putBack() {
-        guard var result, !result.isPutBack else { return }
-        var failed = false
-        for (original, trashed) in result.moved {
-            do {
-                try FileManager.default.createDirectory(at: original.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try FileManager.default.moveItem(at: trashed, to: original)
-            } catch {
-                failed = true
+        guard let result, !result.isPutBack, !isWorking else { return }
+        isWorking = true
+        Task {
+            var failed = false
+            for (original, trashed) in result.moved {
+                let folder = original.deletingLastPathComponent()
+                try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                if (try? FileManager.default.moveItem(at: trashed, to: original)) == nil {
+                    // Apps go back through Finder, which may put them in
+                    // /Applications when Lumina can't.
+                    _ = await FinderScript.move(trashed, into: folder)
+                }
+                if !FileManager.default.fileExists(atPath: original.path) { failed = true }
             }
+            var updated = result
+            updated.putBackFailed = failed
+            updated.isPutBack = !failed
+            withAnimation(.snappy(duration: 0.25)) { self.result = updated }
+            isWorking = false
+            scan()
         }
-        result.putBackFailed = failed
-        result.isPutBack = !failed
-        self.result = result
-        scan()
+    }
+
+    /// True for a moment after the first click on Empty Trash, which then
+    /// asks to be clicked again.
+    private(set) var awaitsEmptyConfirmation = false
+    @ObservationIgnored private var emptyConfirmationTask: Task<Void, Never>?
+
+    /// Empty Trash: the first click asks for a second one, which empties the
+    /// whole Trash through Finder, freeing the space for good.
+    func emptyTrashTapped() {
+        guard let result, !result.isTrashEmptied, !isWorking else { return }
+        guard awaitsEmptyConfirmation else {
+            awaitsEmptyConfirmation = true
+            emptyConfirmationTask = Task {
+                try? await Task.sleep(for: .seconds(4))
+                guard !Task.isCancelled else { return }
+                awaitsEmptyConfirmation = false
+            }
+            return
+        }
+        emptyConfirmationTask?.cancel()
+        awaitsEmptyConfirmation = false
+        isWorking = true
+        Task {
+            let emptied = await FinderScript.emptyTrash()
+            var updated = result
+            if emptied { updated.isTrashEmptied = true } else { updated.emptyFailed = true }
+            withAnimation(.snappy(duration: 0.25)) { self.result = updated }
+            isWorking = false
+        }
     }
 
     func openTrash() {
