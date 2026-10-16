@@ -22,6 +22,8 @@ struct FullWidthSegmentedPicker<Value: Hashable>: NSViewRepresentable {
 
     func updateNSView(_ control: NSSegmentedControl, context: Context) {
         context.coordinator.parent = self
+        // Follows SwiftUI's .disabled(_:).
+        control.isEnabled = context.environment.isEnabled
         if let index = options.firstIndex(where: { $0.value == selection }) {
             control.selectedSegment = index
         }

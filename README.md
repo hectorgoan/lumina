@@ -40,6 +40,9 @@
 </tr>
 <tr>
 <td width="50%"><img src="docs/marketing/features/quit-all.png" alt="Quit All: A fresh start, in one click."></td>
+<td width="50%"><img src="docs/marketing/features/cleanup.png" alt="Cleanup: Junk out, space back."></td>
+</tr>
+<tr>
 <td width="50%"><img src="docs/marketing/features/customize.png" alt="Customize: Make it yours."></td>
 </tr>
 </table>
@@ -63,6 +66,15 @@ Requires macOS 26 or later.
 - **Caffeine**: keep your Mac and its display awake while it's on, so neither sleep nor the screen saver kicks in.
 - **Stay Green**: keep chat apps like Microsoft Teams showing you as available while it's on. It tells macOS you're active every 30 seconds, without moving the pointer or needing extra permissions. Your display won't sleep while it's on. Lumina's menu bar icon shows it's on; in its settings, choose the indicator (a dot in place of a ray, a halo around the center, green rays, or none) and whether it's green.
 - **Pomodoro**: four 25-minute focus sessions with 5-minute breaks between them, then a 15-minute long break, repeated. You can change all three durations in its settings. Pause, skip or reset any step. Lumina chimes and posts a notification when a step ends and shows the countdown in the menu bar while a session is under way.
+- **Cleanup**: frees disk space by removing junk from your own folders. It shows what it found as a bar split by kind, then cleans when you click **Clean** and confirm. It scans when you open the panel if its last scan is older than the interval chosen in its settings (1 minute to 1 hour, 15 minutes by default); turn off **Scan Automatically** to scan only when you click **↻**. In its settings, choose what it cleans:
+  - **App Caches** (`~/Library/Caches`), skipping apps that are open unless you turn that off;
+  - **Developer Junk**: Xcode's DerivedData and device support files, simulator caches, and npm and Gradle caches;
+  - **Logs & Crash Reports** (`~/Library/Logs`);
+  - **Trash** (needs Full Disk Access);
+  - **Old Downloads** (off by default): files added more than 30 days ago, moved to the Trash;
+  - **Mail Attachments** (off by default, needs Full Disk Access): Mail's downloaded copies.
+
+  Everything except old downloads is deleted rather than moved to the Trash. Cleanup never touches system folders, which would need administrator rights.
 - **Keyboard**: lock the keyboard so you can clean it. Every key, including media and brightness keys, is ignored until you click the tile again; the mouse and trackpad keep working. Needs Accessibility permission.
 - **Quit All**: quit every open app with one click, as if you pressed ⌘Q in each. Apps with unsaved changes still ask to save. In its settings, choose apps to keep open; Finder and Lumina are never quit.
 - **System**: CPU, memory, CPU temperature and fan speed as gauges, with load for each core, grouped into efficiency and performance cores. Two alternative layouts start hidden; show them in edit mode:

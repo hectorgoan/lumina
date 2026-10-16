@@ -60,6 +60,7 @@ A SwiftUI macOS menu bar app (`MenuBarExtra`, window style) that hosts focus uti
 - **Keyboard Lock:** a `CGEvent` tap, which needs Accessibility.
 - **Quit All:** `NSRunningApplication.terminate()` with a keep-open list.
 - **System / System List / CPU Focus:** `host_processor_info`, VM stats, and the SMC (private, `Utilities/SystemStatus/SMC.swift`) for temperature (`Tp*`/`Te*` keys) and fans.
+- **Cleanup:** `CleanupCategory` (what and where), `CleanupScanner` (nonisolated: scans and removes, run in detached tasks), `CleanupController` (phases, persisted choices, two-click confirm, scan interval or manual scans; it only scans when the panel opens, never in the background). User folders only; Trash/Mail need Full Disk Access (detected by listing `~/.Trash`). Never run a real clean while testing: point `CleanupScanner` at a fake home.
 - **World clocks:** `WorldClockCity.all` has 458 validated cities (every UN capital). The menu bar items are `NSStatusItem`s, and the city tag is an `NSTextAttachment` drawn in `labelColor`.
 - **Batteries:** the Mac's battery via `IOPSCopyPowerSourcesInfo`, accessories via `dlsym("IOPSCopyPowerSourcesByType")(4)`. Comes in S/M/L/XL.
 

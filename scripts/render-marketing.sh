@@ -19,4 +19,5 @@ find Sources/Lumina -name "*.swift" ! -name "LuminaApp.swift" -print0 \
     | xargs -0 swiftc -O -swift-version 6 -module-name LuminaRender scripts/marketing/main.swift \
         -F "$FRAMEWORKS" -framework Sparkle -Xlinker -rpath -Xlinker "$FRAMEWORKS" -o "$RENDERER"
 
-"$RENDERER" "$PWD"
+# English formatting ("5.6 GB", "Fri", 24-hour time, °C), whatever this Mac's region.
+"$RENDERER" "$PWD" -AppleLocale en_GB
