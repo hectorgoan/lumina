@@ -9,6 +9,11 @@ final class UtilityStore {
     private static let hiddenKey = "hiddenUtilities"
     private static let worldClocksKey = "worldClocks"
     private static let batteryWidgetsKey = "batteryWidgets"
+    private static let moreKey = "more.utilities"
+    private static let moreStyleKey = "more.style"
+    private static let moreNameKey = "more.name"
+    private static let moreRemembersKey = "more.remembersOpen"
+    private static let moreOpenKey = "more.isOpen"
 
     /// Every utility in display order. Hidden utilities always come after
     /// the visible ones.
@@ -28,14 +33,51 @@ final class UtilityStore {
         didSet { defaults.set(try? JSONEncoder().encode(batteryWidgets), forKey: Self.batteryWidgetsKey) }
     }
 
+    // MARK: More section
+
+    /// Utilities tucked into the More section: set up and ready, but shown
+    /// only when the section is open.
+    private(set) var moreIDs: Set<String> {
+        didSet { defaults.set(Array(moreIDs), forKey: Self.moreKey) }
+    }
+
+    var moreStyle: MoreStyle {
+        didSet { defaults.set(moreStyle.rawValue, forKey: Self.moreStyleKey) }
+    }
+
+    /// The section's name; "More" unless the user renames it.
+    var moreName: String {
+        didSet { defaults.set(moreName, forKey: Self.moreNameKey) }
+    }
+
+    /// The section's name as shown: "More" when left empty.
+    var moreTitle: String {
+        let name = moreName.trimmingCharacters(in: .whitespaces)
+        return name.isEmpty ? "More" : name
+    }
+
+    /// Keeps the section open (or on its page) between openings of the
+    /// panel; otherwise it starts closed each time.
+    var remembersMoreOpen: Bool {
+        didSet { defaults.set(remembersMoreOpen, forKey: Self.moreRemembersKey) }
+    }
+
+    var isMoreOpen: Bool {
+        didSet { defaults.set(isMoreOpen, forKey: Self.moreOpenKey) }
+    }
+
+    /// The section's tiles are kept invisible while it opens or closes.
+    var isMoreFading = false
+
+    /// Whether the section's settings page is open.
+    var isMoreSettingsOpen = false
+
     /// Edit mode as far as layout goes: it widens the panel for the
     /// library, instantly.
     var isEditing = false {
         didSet {
             if !isEditing {
-                settingsUtilityID = nil
-                isAddingWorldClock = false
-                isAddingBatteryWidget = false
+                closeSubpages()
                 isLibraryPresented = false
                 isLibraryExpanded = false
             }
@@ -86,7 +128,7 @@ final class UtilityStore {
     /// Whether a settings or add page is open, so edit mode's sidebar shows
     /// a preview instead of the Library.
     var isConfiguring: Bool {
-        settingsUtilityID != nil || isAddingWorldClock || isAddingBatteryWidget
+        settingsUtilityID != nil || isAddingWorldClock || isAddingBatteryWidget || isMoreSettingsOpen
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -115,15 +157,48 @@ final class UtilityStore {
         hiddenIDs = hidden
         utilities = Self.partitioned(restored + added, hidden: hidden)
 
+        moreIDs = Set(defaults.stringArray(forKey: Self.moreKey) ?? []).intersection(byID.keys).subtracting(hidden)
+        moreStyle = defaults.string(forKey: Self.moreStyleKey).flatMap(MoreStyle.init) ?? .row
+        moreName = defaults.string(forKey: Self.moreNameKey) ?? "More"
+        let remembers = defaults.bool(forKey: Self.moreRemembersKey)
+        remembersMoreOpen = remembers
+        isMoreOpen = remembers && defaults.bool(forKey: Self.moreOpenKey)
+
         // Save right away, so utilities hidden by default stay as the user
         // leaves them on later launches.
         defaults.set(utilities.map(\.id), forKey: Self.orderKey)
         defaults.set(Array(hidden), forKey: Self.hiddenKey)
     }
 
+    /// Closes any settings or add page, back to the grid.
+    func closeSubpages() {
+        settingsUtilityID = nil
+        isMoreSettingsOpen = false
+        isAddingWorldClock = false
+        isAddingBatteryWidget = false
+    }
+
     /// The utilities shown outside edit mode.
     var visibleUtilities: [Utility] {
         utilities.filter { !hiddenIDs.contains($0.id) }
+    }
+
+    /// The visible utilities always on show.
+    var mainUtilities: [Utility] {
+        visibleUtilities.filter { !moreIDs.contains($0.id) }
+    }
+
+    /// The visible utilities in the More section.
+    var moreUtilities: [Utility] {
+        visibleUtilities.filter { moreIDs.contains($0.id) }
+    }
+
+    /// Applies the edit grid's order: the utilities before the section's
+    /// header stay on show, the ones after it go into the section.
+    func reorder(main: [Utility], more: [Utility]) {
+        reorder(main + more)
+        let ids = Set(more.map(\.id))
+        if ids != moreIDs { moreIDs = ids }
     }
 
     var settingsUtility: Utility? {
@@ -163,6 +238,8 @@ final class UtilityStore {
             others.insert(utility, at: insertionIndex)
         } else {
             hiddenIDs.insert(utility.id)
+            // Shown again from the Library, it comes back on show.
+            moreIDs.remove(utility.id)
             others.append(utility)
         }
         utilities = others
@@ -231,6 +308,7 @@ final class UtilityStore {
         worldClocks.removeAll { $0.id == utility.id }
         batteryWidgets.removeAll { $0.id == utility.id }
         hiddenIDs.remove(utility.id)
+        moreIDs.remove(utility.id)
         utilities.removeAll { $0.id == utility.id }
     }
 
@@ -242,4 +320,30 @@ final class UtilityStore {
 /// The Uninstaller's pages, shown in place of the grid.
 enum UninstallerPage {
     case list, review, done
+}
+
+/// How the More section shows its utilities.
+enum MoreStyle: String, CaseIterable {
+    /// A row under the utilities, with their icons; opens below.
+    case row
+    /// A second page of tiles, with dots to switch.
+    case pages
+    /// A stack of cards that fans out.
+    case stack
+
+    var title: String {
+        switch self {
+        case .row: "Row"
+        case .pages: "Pages"
+        case .stack: "Stack"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .row: "A row under your utilities, with the icons of what’s inside."
+        case .pages: "A second page of tiles. Click the dots to switch."
+        case .stack: "A stack of cards that fans out when clicked."
+        }
+    }
 }

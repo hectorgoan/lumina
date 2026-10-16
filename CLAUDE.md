@@ -32,7 +32,8 @@ A SwiftUI macOS menu bar app (`MenuBarExtra`, window style) that hosts focus uti
 - `Core/UtilityStore.swift`:
   - Stores the order, hidden IDs (persisted; hidden ones always come after visible ones), user-added `worldClocks` and `batteryWidgets` (JSON in UserDefaults), and page state (`settingsUtilityID`, `isAddingWorldClock`, `isAddingBatteryWidget`).
   - Edit-mode flags: `isEditing` (layout), `isLibraryExpanded` (width) and `isLibraryPresented` (fade). `showsEditControls` is `isEditing && isLibraryPresented`.
-- `Core/UtilityStore+Transitions.swift`: `swapPage`, `swapPage(adding:)`, `hideTile`, `showTile`, `removeTile` and `poofTile`.
+- `Core/UtilityStore+Transitions.swift`: `swapPage`, `swapPage(adding:)`, `hideTile`, `showTile`, `removeTile`, `poofTile`, `toggleMore` and `showMorePage`. Each step goes through `step(_:lasting:)`, which also continues after the step's fixed duration (an endlessly repeating animation nearby can keep `.removed` from ever firing).
+- **More section** (`App/MoreSection.swift`): `store.moreIDs` holds the tucked-away utilities; style (`MoreStyle`: row/pages/stack), name and remember-open are persisted. The panel is one `ReorderableGrid` of `PanelGridItem`s whose `.moreHeader` item is the section's header (fixed, `canDrag` false): in edit mode, utilities after it are in the section (`applyPanelGridOrder`).
 - `Components/`:
   - `ReorderableGrid` and `TileGridLayout`: a four-column packing layout with drag-to-reorder.
   - `ModuleTile`, `EditBadge`, `ModuleToggleButton` and `CompactToggleModule`.
