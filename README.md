@@ -6,6 +6,18 @@
 
 <p align="center">A macOS menu bar app that hosts small utilities to help you focus, styled like a Control Center applet.</p>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/marketing/hero-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/marketing/hero-light.png">
+    <img src="docs/marketing/hero-dark.png" alt="Lumina's panel open below its menu bar icon, with Appearance, Caffeine, Stay Green, two world clocks, Pomodoro and a battery widget" width="100%">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="https://github.com/hectorgoan/lumina/releases/latest/download/Lumina.zip"><b>Download Lumina</b></a>
+</p>
+
 ## Installing
 
 1. Download [Lumina.zip](https://github.com/hectorgoan/lumina/releases/latest/download/Lumina.zip) from the latest release and unzip it.
@@ -104,6 +116,21 @@ This creates Sparkle's update signing key in your login keychain (or reuses an e
 macOS asks you to allow access to the keychain along the way. Commit the updated `Resources/Info.plist` afterwards. The workflow refuses to release until the public key is set.
 
 Keep a backup of the update key (Sparkle's `generate_keys -x` tool exports it). If it's lost, installed copies can't verify new updates.
+
+## Marketing images
+
+`docs/marketing` holds the README's hero images and cards for social posts:
+
+- `hero-dark.png` and `hero-light.png`: 2880 × 1800 (16:10 at 2x), a desktop with Lumina's panel open below its menu bar icon.
+- `x-overview.png`, `x-widgets.png` and `x-flow.png`: 1600 × 900, X's recommended 16:9 size, each with a headline.
+
+They're rendered from the app's real views, so regenerate them after changing the UI:
+
+```bash
+scripts/render-marketing.sh
+```
+
+The script compiles Lumina's sources, minus its `@main`, together with `scripts/marketing/main.swift` into a small renderer. That file holds the scenes, layouts and copy. While it runs it turns on Caffeine and Stay Green and samples the system monitor for about 45 seconds, so the CPU graph has history. Battery levels, clock times and system readings are your Mac's live values.
 
 ## Adding a utility
 
