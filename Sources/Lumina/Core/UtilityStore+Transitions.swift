@@ -115,7 +115,7 @@ extension UtilityStore {
     /// doesn't. Something animating endlessly nearby (like a symbol that
     /// turns while a scan runs) can keep that report from ever coming,
     /// which left the panel sitting empty until it stopped.
-    private func step(_ animation: Animation, lasting duration: TimeInterval, _ change: () -> Void, completion: @escaping @MainActor () -> Void) {
+    func step(_ animation: Animation, lasting duration: TimeInterval, _ change: () -> Void, completion: @escaping @MainActor () -> Void) {
         let once = StepCompletion(completion)
         withAnimation(animation, completionCriteria: .removed, change) { once.run() }
         Task { @MainActor in
