@@ -394,23 +394,23 @@ private struct PanelFooter: View {
                     Text("Edit Utilities").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.glass)
-                .opacity(store.showsEditControls ? 0 : 1)
-                .allowsHitTesting(!store.showsEditControls)
+                .opacity(showsDone ? 0 : 1)
+                .allowsHitTesting(!showsDone)
 
-                Button(action: toggleEditing) {
+                Button(action: done) {
                     Text("Done").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.glassProminent)
-                .opacity(store.showsEditControls ? 1 : 0)
-                .allowsHitTesting(store.showsEditControls)
+                .opacity(showsDone ? 1 : 0)
+                .allowsHitTesting(showsDone)
             }
             .controlSize(.large)
 
             Menu {
                 Button("About Lumina", action: AboutPanel.show)
                 Button("Check for Updates…", action: UpdateController.shared.checkForUpdates)
-                Button("\(store.moreTitle) Section Settings…") { store.openMoreSettings() }
                     .disabled(!UpdateController.shared.canCheckForUpdates)
+                Button("\(store.moreTitle) Section Settings…") { store.openMoreSettings() }
                 Divider()
                 Button("Quit Lumina") { NSApp.terminate(nil) }
                     .keyboardShortcut("q")
@@ -432,15 +432,38 @@ private struct PanelFooter: View {
     /// the same steps in reverse. The window's size only animates while the
     /// space it gains or loses is empty, which keeps its glass from
     /// flickering.
+    /// Edit mode ends with Done; so does the More section's settings page
+    /// when it was opened outside edit mode (from its menu or the … menu).
+    private var showsDone: Bool {
+        store.showsEditControls || (!store.isEditing && store.isMoreSettingsOpen)
+    }
+
+    private func done() {
+        if store.isEditing {
+            toggleEditing()
+        } else {
+            store.swapPage { store.isMoreSettingsOpen = false }
+        }
+    }
+
     private func toggleEditing() {
         if store.isEditing {
-            withAnimation(Motion.dismiss, completionCriteria: .removed) {
+            // A settings or add page open in edit mode fades out with the
+            // Library, the grid takes its place while the panel resizes, and
+            // fades in as edit mode ends.
+            let isConfiguring = store.isConfiguring
+            store.step(Motion.dismiss, lasting: Motion.dismissDuration) {
                 store.isLibraryPresented = false
+                if isConfiguring { store.isPageVisible = false }
             } completion: {
-                withAnimation(Motion.resize, completionCriteria: .removed) {
+                store.step(Motion.resize, lasting: Motion.resizeDuration) {
                     store.isLibraryExpanded = false
+                    if isConfiguring { store.closeSubpages() }
                 } completion: {
-                    withAnimation(Motion.present) { store.isEditing = false }
+                    withAnimation(Motion.present) {
+                        store.isEditing = false
+                        store.isPageVisible = true
+                    }
                 }
             }
         } else if UpdateController.shared.availableVersion != nil || !store.moreUtilities.isEmpty {

@@ -77,10 +77,7 @@ final class UtilityStore {
     var isEditing = false {
         didSet {
             if !isEditing {
-                settingsUtilityID = nil
-                isMoreSettingsOpen = false
-                isAddingWorldClock = false
-                isAddingBatteryWidget = false
+                closeSubpages()
                 isLibraryPresented = false
                 isLibraryExpanded = false
             }
@@ -171,6 +168,14 @@ final class UtilityStore {
         // leaves them on later launches.
         defaults.set(utilities.map(\.id), forKey: Self.orderKey)
         defaults.set(Array(hidden), forKey: Self.hiddenKey)
+    }
+
+    /// Closes any settings or add page, back to the grid.
+    func closeSubpages() {
+        settingsUtilityID = nil
+        isMoreSettingsOpen = false
+        isAddingWorldClock = false
+        isAddingBatteryWidget = false
     }
 
     /// The utilities shown outside edit mode.

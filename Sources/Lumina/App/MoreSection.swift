@@ -160,9 +160,11 @@ struct MoreHeader: View {
     }
 }
 
-/// The Pages style's dots, under the grid.
+/// The Pages style's dots, under the grid. While they're shown, scrolling
+/// over the panel turns the page too.
 struct MorePageDots: View {
     @Environment(UtilityStore.self) private var store
+    @StateObject private var scroller = PageScroller()
 
     var body: some View {
         HStack(spacing: 6) {
@@ -181,6 +183,68 @@ struct MorePageDots: View {
         }
         .frame(maxWidth: .infinity)
         .moreSectionMenu(store: store)
+        .onAppear {
+            scroller.start { [store] showsMore in
+                store.showMorePage(showsMore ?? !store.isMoreOpen)
+            }
+        }
+        .onDisappear { scroller.stop() }
+    }
+}
+
+/// Turns pages on scrolling over the panel: a horizontal two-finger swipe
+/// on a trackpad (left for the section, right to go back, one page per
+/// swipe), or a notch of a mouse wheel (to the other page).
+@MainActor
+private final class PageScroller: ObservableObject {
+    private var monitor: Any?
+    private var swipe: CGFloat = 0
+    private var hasTurnedThisSwipe = false
+    private var lastWheelTurn = Date.distantPast
+
+    /// `turn` gets true for the section's page, false for the utilities,
+    /// or nil for "the other one".
+    func start(_ turn: @escaping @MainActor (Bool?) -> Void) {
+        guard monitor == nil else { return }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            // Only scrolls over the panel's own window.
+            if event.window?.className.contains("MenuBarExtra") == true {
+                MainActor.assumeIsolated { self?.handle(event, turn) }
+            }
+            return event
+        }
+    }
+
+    func stop() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+    }
+
+    private func handle(_ event: NSEvent, _ turn: (Bool?) -> Void) {
+        if event.hasPreciseScrollingDeltas {
+            if event.phase == .began {
+                swipe = 0
+                hasTurnedThisSwipe = false
+            }
+            // Fingers' own direction, whatever the scrolling preference.
+            let fingers = event.isDirectionInvertedFromDevice ? event.scrollingDeltaX : -event.scrollingDeltaX
+            if abs(event.scrollingDeltaX) > abs(event.scrollingDeltaY) || swipe != 0 {
+                swipe += fingers
+            }
+            if !hasTurnedThisSwipe && abs(swipe) > 40 {
+                hasTurnedThisSwipe = true
+                turn(swipe < 0)
+            }
+            if event.phase == .ended || event.phase == .cancelled {
+                swipe = 0
+                hasTurnedThisSwipe = false
+            }
+        } else {
+            let delta = event.scrollingDeltaX != 0 ? event.scrollingDeltaX : event.scrollingDeltaY
+            guard delta != 0, Date.now.timeIntervalSince(lastWheelTurn) > 0.4 else { return }
+            lastWheelTurn = .now
+            turn(nil)
+        }
     }
 }
 
@@ -318,10 +382,14 @@ struct MoreSettingsPage: View {
                         Text("Name")
                             .font(.system(size: 13))
                         Spacer()
+                        // Plain, on the panel's own fill: a bordered field's
+                        // system material flashed as the page faded in.
                         TextField("More", text: $store.moreName)
-                            .textFieldStyle(.roundedBorder)
-                            .controlSize(.small)
-                            .frame(width: 120)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12))
+                            .padding(.horizontal, 8)
+                            .frame(width: 120, height: 24)
+                            .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                     }
 
                     Toggle("Remember Open or Closed", isOn: $store.remembersMoreOpen)
