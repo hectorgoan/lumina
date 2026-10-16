@@ -7,11 +7,13 @@
 <p align="center">A macOS menu bar app that hosts small utilities to help you focus, styled like a Control Center applet.</p>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/marketing/hero-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/marketing/hero-light.png">
-    <img src="docs/marketing/hero-dark.png" alt="Lumina's panel open below its menu bar icon, with CPU Focus, Caffeine, Stay Green, a world clock, two battery widgets, Pomodoro, Appearance, Keyboard Lock and Quit All" width="100%">
-  </picture>
+  <a href="docs/marketing/hero-dark.png">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/marketing/readme/hero-dark.jpg">
+      <source media="(prefers-color-scheme: light)" srcset="docs/marketing/readme/hero-light.jpg">
+      <img src="docs/marketing/readme/hero-dark.jpg" alt="Lumina's panel open below its menu bar icon, with CPU Focus, Caffeine, Stay Green, a world clock, two battery widgets, Pomodoro, Appearance, Keyboard Lock and Quit All" width="100%">
+    </picture>
+  </a>
 </p>
 
 <p align="center">
@@ -23,27 +25,27 @@
 <!-- features:start -->
 <table>
 <tr>
-<td width="50%"><img src="docs/marketing/features/caffeine.png" alt="Caffeine: Keep your Mac awake."></td>
-<td width="50%"><img src="docs/marketing/features/stay-green.png" alt="Stay Green: Always available."></td>
+<td width="50%"><a href="docs/marketing/features/caffeine.png"><img src="docs/marketing/readme/features/caffeine.jpg" alt="Caffeine: Keep your Mac awake."></a></td>
+<td width="50%"><a href="docs/marketing/features/stay-green.png"><img src="docs/marketing/readme/features/stay-green.jpg" alt="Stay Green: Always available."></a></td>
 </tr>
 <tr>
-<td width="50%"><img src="docs/marketing/features/pomodoro.png" alt="Pomodoro: Focus in rounds."></td>
-<td width="50%"><img src="docs/marketing/features/world-clocks.png" alt="World Clocks: Every time zone you work with."></td>
+<td width="50%"><a href="docs/marketing/features/pomodoro.png"><img src="docs/marketing/readme/features/pomodoro.jpg" alt="Pomodoro: Focus in rounds."></a></td>
+<td width="50%"><a href="docs/marketing/features/world-clocks.png"><img src="docs/marketing/readme/features/world-clocks.jpg" alt="World Clocks: Every time zone you work with."></a></td>
 </tr>
 <tr>
-<td width="50%"><img src="docs/marketing/features/batteries.png" alt="Batteries: Every battery, one look."></td>
-<td width="50%"><img src="docs/marketing/features/system.png" alt="System: Your Mac’s vitals."></td>
+<td width="50%"><a href="docs/marketing/features/batteries.png"><img src="docs/marketing/readme/features/batteries.jpg" alt="Batteries: Every battery, one look."></a></td>
+<td width="50%"><a href="docs/marketing/features/system.png"><img src="docs/marketing/readme/features/system.jpg" alt="System: Your Mac’s vitals."></a></td>
 </tr>
 <tr>
-<td width="50%"><img src="docs/marketing/features/appearance.png" alt="Appearance: Light or dark, instantly."></td>
-<td width="50%"><img src="docs/marketing/features/keyboard-lock.png" alt="Keyboard Lock: Clean your keyboard, not your document."></td>
+<td width="50%"><a href="docs/marketing/features/appearance.png"><img src="docs/marketing/readme/features/appearance.jpg" alt="Appearance: Light or dark, instantly."></a></td>
+<td width="50%"><a href="docs/marketing/features/keyboard-lock.png"><img src="docs/marketing/readme/features/keyboard-lock.jpg" alt="Keyboard Lock: Clean your keyboard, not your document."></a></td>
 </tr>
 <tr>
-<td width="50%"><img src="docs/marketing/features/quit-all.png" alt="Quit All: A fresh start, in one click."></td>
-<td width="50%"><img src="docs/marketing/features/cleanup.png" alt="Cleanup: Junk out, space back."></td>
+<td width="50%"><a href="docs/marketing/features/quit-all.png"><img src="docs/marketing/readme/features/quit-all.jpg" alt="Quit All: A fresh start, in one click."></a></td>
+<td width="50%"><a href="docs/marketing/features/cleanup.png"><img src="docs/marketing/readme/features/cleanup.jpg" alt="Cleanup: Junk out, space back."></a></td>
 </tr>
 <tr>
-<td width="50%"><img src="docs/marketing/features/customize.png" alt="Customize: Make it yours."></td>
+<td width="50%"><a href="docs/marketing/features/customize.png"><img src="docs/marketing/readme/features/customize.jpg" alt="Customize: Make it yours."></a></td>
 </tr>
 </table>
 <!-- features:end -->
@@ -163,6 +165,7 @@ Keep a backup of the update key (Sparkle's `generate_keys -x` tool exports it). 
 - `hero-dark.png` and `hero-light.png`: 2880 × 1800 (16:10 at 2x), a desktop with Lumina's panel open below its menu bar icon and the pitch beside it.
 - `x-overview.png`: 1600 × 900, X's recommended 16:9 size.
 - `features/*.png`: 1600 × 900, one per feature, shown in the [Features](#features) gallery above.
+- `readme/`: half-size JPEG copies of the heroes and feature cards (1440 × 900 and 800 × 450), which the README shows so it loads quickly. Each links to its full-size PNG.
 
 They're rendered from the app's real views, so regenerate them after changing the UI:
 
