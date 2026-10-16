@@ -66,6 +66,14 @@ struct PanelView: View {
                 .fadesWithoutColorShift()
                 .opacity(store.isPageVisible ? 1 : 0)
 
+            // Outside the page, so they stay put (and animate) while it
+            // turns.
+            if store.showsMorePageDots {
+                MorePageDots()
+                    .fadesWithoutColorShift()
+                    .opacity(store.isEditing ? 0 : 1)
+            }
+
             Spacer(minLength: 0)
 
             PanelFooter()
@@ -178,11 +186,6 @@ private struct UtilityGrid: View {
                 .allowsHitTesting(false)
             }
 
-            if store.moreStyle == .pages && !store.moreUtilities.isEmpty && !store.isLibraryExpanded {
-                MorePageDots()
-                    .fadesWithoutColorShift()
-                    .opacity(store.isEditing ? 0 : 1)
-            }
 
         }
         // An update found while the panel is open: the panel makes room

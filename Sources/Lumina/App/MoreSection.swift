@@ -41,6 +41,12 @@ extension UtilityStore {
         return main + [.moreHeader] + (isMoreOpen ? more : [])
     }
 
+    /// Whether the Pages style's dots show under the grid.
+    var showsMorePageDots: Bool {
+        moreStyle == .pages && !moreUtilities.isEmpty && !isLibraryExpanded && !isConfiguring
+            && uninstallerPage == nil
+    }
+
     /// Applies an order from the edit grid.
     func applyPanelGridOrder(_ items: [PanelGridItem]) {
         guard let header = items.firstIndex(where: { $0.id == PanelGridItem.moreHeader.id }) else { return }
@@ -167,20 +173,23 @@ struct MorePageDots: View {
     @StateObject private var scroller = PageScroller()
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 2) {
             ForEach([false, true], id: \.self) { isMore in
                 let isCurrent = store.isMoreOpen == isMore
                 Button { store.showMorePage(isMore) } label: {
-                    Circle()
+                    // The current page's dot stretches into a pill, and the
+                    // pill slides across as the page turns.
+                    Capsule()
                         .fill(Color.primary.opacity(isCurrent ? 0.85 : 0.3))
-                        .frame(width: 7, height: 7)
+                        .frame(width: isCurrent ? 18 : 7, height: 7)
                         .padding(4)
-                        .contentShape(Circle())
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help(isMore ? store.moreTitle : "Utilities")
             }
         }
+        .animation(.snappy(duration: 0.3), value: store.isMoreOpen)
         .frame(maxWidth: .infinity)
         .moreSectionMenu(store: store)
         .onAppear {
@@ -222,6 +231,8 @@ private final class PageScroller: ObservableObject {
 
     private func handle(_ event: NSEvent, _ turn: (Bool?) -> Void) {
         if event.hasPreciseScrollingDeltas {
+            // The glide after the fingers lift isn't a new swipe.
+            guard event.momentumPhase.isEmpty else { return }
             if event.phase == .began {
                 swipe = 0
                 hasTurnedThisSwipe = false

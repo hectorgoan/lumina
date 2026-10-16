@@ -46,14 +46,18 @@ extension UtilityStore {
     func toggleMore() {
         guard !isTransitioning else { return }
         isTransitioning = true
-        if isMoreOpen {
+        // The Stack's header changes too (the stacked card or the open
+        // title), so it fades out, swaps while the panel resizes, and fades
+        // back in, both ways.
+        if isMoreOpen || moreStyle == .stack {
+            let opening = !isMoreOpen
             step(Motion.dismiss, lasting: Motion.dismissDuration) {
                 self.isMoreFading = true
             } completion: {
                 self.step(Motion.resize, lasting: Motion.resizeDuration) {
-                    self.isMoreOpen = false
+                    self.isMoreOpen = opening
                 } completion: {
-                    self.isMoreFading = false
+                    withAnimation(Motion.present) { self.isMoreFading = false }
                     self.isTransitioning = false
                 }
             }
@@ -70,7 +74,8 @@ extension UtilityStore {
 
     /// The Pages style's switch: the whole page fades, swaps and fades in.
     func showMorePage(_ open: Bool) {
-        guard open != isMoreOpen else { return }
+        // Requests during a turn are dropped, rather than applied at once.
+        guard open != isMoreOpen, !isTransitioning else { return }
         swapPage { self.isMoreOpen = open }
     }
 
