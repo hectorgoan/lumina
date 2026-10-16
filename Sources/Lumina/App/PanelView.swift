@@ -62,6 +62,7 @@ struct PanelView: View {
 private struct UtilityGrid: View {
     @Environment(UtilityStore.self) private var store
     @StateObject private var drop = LibraryDropTarget()
+    @StateObject private var tileFrames = TileFrames()
     private let updates = UpdateController.shared
 
     var body: some View {
@@ -113,6 +114,9 @@ private struct UtilityGrid: View {
                 // Tiles being added or removed fade while the grid makes or
                 // closes their space.
                 .opacity(store.fadingUtilityIDs.contains(utility.id) ? 0 : 1)
+                .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { frame in
+                    tileFrames.rects[utility.id] = frame
+                }
             }
 
         }
@@ -141,7 +145,12 @@ private struct UtilityGrid: View {
             }
             if utility.isRemovable {
                 EditBadge(symbol: "minus", help: "Remove \(utility.name)") {
-                    store.removeTile(utility)
+                    // The Dock's poof where the tile was; a fade if it can't play.
+                    if let frame = tileFrames.rects[utility.id], Poof.show(over: frame, in: NSApp.keyWindow) {
+                        store.poofTile(utility)
+                    } else {
+                        store.removeTile(utility)
+                    }
                 }
             } else {
                 let isHidden = store.isHidden(utility)
@@ -154,6 +163,12 @@ private struct UtilityGrid: View {
             }
         }
     }
+}
+
+/// Where each tile is in the window, for the poof when one is removed.
+/// Not published: updating it shouldn't redraw anything.
+private final class TileFrames: ObservableObject {
+    var rects: [String: CGRect] = [:]
 }
 
 /// Tells the user a new version is ready, above the utilities.

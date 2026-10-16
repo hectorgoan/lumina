@@ -7,15 +7,20 @@ import SwiftUI
 /// resize the window happen instantly, and these curves animate the content
 /// inside it.
 enum Motion {
-    /// Something arriving, like the library fading in.
+    /// Something arriving, like the library fading in. A spring, which
+    /// settles naturally; nothing waits for it to finish.
     static let present = Animation.smooth(duration: 0.25)
 
-    /// Something leaving: the same curve, a touch quicker.
-    static let dismiss = Animation.smooth(duration: 0.2)
+    // The next two hand off to the following step when they finish, so they
+    // use fixed-length curves. A spring's tail keeps settling well past its
+    // nominal duration, which left the panel sitting empty between steps.
+
+    /// Something leaving.
+    static let dismiss = Animation.easeInOut(duration: 0.16)
 
     /// The panel changing size around empty space, like making room for the
     /// library before it fades in.
-    static let resize = Animation.smooth(duration: 0.25)
+    static let resize = Animation.easeInOut(duration: 0.22)
 }
 
 extension View {

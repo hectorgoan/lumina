@@ -53,6 +53,25 @@ extension UtilityStore {
         fadeTileOut(utility.id) { self.remove(utility) }
     }
 
+    /// Removes a utility with the Dock's poof: the caller plays the poof
+    /// where the tile was, the tile vanishes at once, and after a beat the
+    /// grid closes the gap.
+    func poofTile(_ utility: Utility) {
+        guard !isTransitioning else { remove(utility); return }
+        isTransitioning = true
+
+        fadingUtilityIDs.insert(utility.id)
+        // Let the poof read before the other tiles move in.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(Motion.resize, completionCriteria: .removed) {
+                self.remove(utility)
+            } completion: {
+                self.fadingUtilityIDs.remove(utility.id)
+                self.isTransitioning = false
+            }
+        }
+    }
+
     /// Brings a hidden utility back: the grid makes room, then it fades in.
     func showTile(_ utility: Utility) {
         fadeTileIn {
