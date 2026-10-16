@@ -11,30 +11,35 @@ extension Utility {
     )
 }
 
-/// Search any app to uninstall, with the largest unused ones underneath.
+/// Search any app to uninstall, with shortcuts to files left behind and
+/// the Dumpster, or (if chosen in its settings) the largest unused apps.
 /// Turns into an offer to clean up when an app is deleted in Finder.
 struct UninstallerModule: View {
     let controller: UninstallerController
 
     var body: some View {
+        let showsUnused = controller.showsUnusedOnTile
         VStack(alignment: .leading, spacing: 10) {
-            header
+            header(showsDumpster: showsUnused)
             Group {
                 if let notice = controller.notice {
                     noticeView(notice)
                 } else {
-                    browseView
+                    VStack(alignment: .leading, spacing: 10) {
+                        searchButton
+                        if showsUnused { unusedApps } else { shortcuts }
+                    }
                 }
             }
-            // The same height either way, so the panel never resizes.
-            .frame(height: 92, alignment: .top)
+            // The same height whatever it shows, so the panel never resizes.
+            .frame(height: showsUnused ? 92 : 68, alignment: .top)
             .transition(.opacity)
         }
         .animation(.snappy(duration: 0.25), value: controller.notice?.bundleID)
         .onAppear { controller.refreshIfStale() }
     }
 
-    private var header: some View {
+    private func header(showsDumpster: Bool) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "xmark.app.fill")
                 .font(.system(size: 14, weight: .semibold))
@@ -54,83 +59,155 @@ struct UninstallerModule: View {
 
             Spacer(minLength: 0)
 
-            Button {
-                DumpsterWindowController.shared.show()
-            } label: {
-                DumpsterGlyph(size: 16)
-                    .frame(width: 26, height: 26)
-                    .background(Circle().fill(Color.panelTrack))
-                    .contentShape(Circle())
+            roundButton(help: "Scan Again", action: controller.scan) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 11, weight: .semibold))
+                    .symbolEffect(.rotate, options: .repeat(.continuous), isActive: controller.isScanning)
+                    .foregroundStyle(controller.isScanning ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
             }
-            .buttonStyle(PressableButtonStyle())
-            .help("Open Dumpster")
-            .accessibilityLabel("Open Dumpster")
+            .disabled(controller.isScanning)
+
+            if showsDumpster {
+                roundButton(help: "Open Dumpster", action: { DumpsterWindowController.shared.show() }) {
+                    DumpsterGlyph(size: 16)
+                }
+            }
         }
+    }
+
+    private func roundButton<Label: View>(help: String, action: @escaping () -> Void, @ViewBuilder label: () -> Label) -> some View {
+        Button(action: action) {
+            label()
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(Color.panelTrack))
+                .contentShape(Circle())
+        }
+        .buttonStyle(PressableButtonStyle())
+        .help(help)
+        .accessibilityLabel(help)
     }
 
     private var subtitle: String {
         if let notice = controller.notice { return "\(notice.name) left files behind" }
+        guard controller.hasScanned else { return "Looking at your apps…" }
+        guard controller.showsUnusedOnTile else {
+            return controller.apps.count == 1 ? "1 app" : "\(controller.apps.count) apps"
+        }
         let unused = controller.unusedApps
-        guard !unused.isEmpty else { return "Removes apps and what they leave" }
-        let bytes = controller.unusedBytes
+        guard !unused.isEmpty else { return "No unused apps" }
         let count = unused.count == 1 ? "1 unused app" : "\(unused.count) unused apps"
-        return bytes > 0 ? "\(count) · \(CleanupFormat.bytes(bytes))" : count
+        return "\(count) · \(CleanupFormat.bytes(controller.unusedBytes))"
     }
 
-    // MARK: - Browsing
-
-    private var browseView: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Opens the full list with the search field focused.
-            Button(action: controller.openList) {
-                HStack(spacing: 6) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11, weight: .medium))
-                    Text("Search apps to uninstall")
-                        .font(.system(size: 12))
-                    Spacer()
-                }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 9)
-                .frame(height: 28)
-                .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .contentShape(Rectangle())
+    /// Opens the full list with the search field focused.
+    private var searchButton: some View {
+        Button { controller.openList() } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11, weight: .medium))
+                Text("Search apps to uninstall")
+                    .font(.system(size: 12))
+                Spacer()
             }
-            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 9)
+            .frame(height: 28)
+            .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
 
-            let unused = Array(controller.unusedApps.prefix(4))
-            if unused.isEmpty {
-                Text(controller.hasScanned
-                     ? "No apps unused for \(controller.unusedThreshold.title)."
-                     : "Looking at your apps…")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-            } else {
-                HStack(spacing: 0) {
-                    ForEach(unused) { app in
-                        Button { controller.review([app]) } label: {
-                            VStack(spacing: 2) {
-                                Image(nsImage: app.icon)
-                                    .resizable()
-                                    .frame(width: 30, height: 30)
-                                Text(app.bytes.map(CleanupFormat.bytes) ?? "…")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .monospacedDigit()
-                                Text(UninstallerFormat.age(app.lastUsed))
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PressableButtonStyle())
-                        .help("Uninstall \(app.name)")
+    // MARK: - Shortcuts (unused apps off)
+
+    private var shortcuts: some View {
+        HStack(spacing: 8) {
+            chip(action: { controller.openList(tab: .leftBehind) }) {
+                Image(systemName: "questionmark.app.dashed")
+                    .font(.system(size: 11, weight: .medium))
+                Text("Left Behind")
+                if controller.hasScanned && !controller.leftBehind.isEmpty {
+                    Text("\(controller.leftBehind.count)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(Color.red.opacity(0.85)))
+                        .transition(.opacity)
+                }
+            }
+            .help("Files left by apps you deleted")
+
+            chip(action: { DumpsterWindowController.shared.show() }) {
+                DumpsterGlyph(size: 15)
+                Text("Dumpster")
+            }
+            .help("A window to drag apps into from Finder")
+        }
+    }
+
+    private func chip<Content: View>(action: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) { content() }
+                .font(.system(size: 11, weight: .medium))
+                .frame(maxWidth: .infinity, minHeight: 26)
+                .background(Capsule().fill(Color.panelTrack))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(PressableButtonStyle())
+    }
+
+    // MARK: - Unused apps (on)
+
+    @ViewBuilder private var unusedApps: some View {
+        if !controller.hasScanned {
+            // Placeholders until the first scan finishes; then everything
+            // arrives together.
+            HStack(spacing: 0) {
+                ForEach(0..<4, id: \.self) { _ in
+                    VStack(spacing: 4) {
+                        SkeletonBone(width: 30, height: 30, radius: 7)
+                        SkeletonBone(width: 40, height: 8)
+                        SkeletonBone(width: 30, height: 6)
                     }
-                    // Keep icons at the same width when there are fewer than four.
-                    ForEach(unused.count..<4, id: \.self) { _ in Color.clear.frame(maxWidth: .infinity) }
+                    .frame(maxWidth: .infinity)
                 }
             }
+            .transition(.opacity)
+        } else if controller.unusedApps.isEmpty {
+            Text("No apps unused for \(controller.unusedThreshold.title).")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 50)
+        } else {
+            let unused = Array(controller.unusedApps.prefix(4))
+            HStack(spacing: 0) {
+                ForEach(unused) { app in
+                    Button { controller.review([app]) } label: {
+                        VStack(spacing: 2) {
+                            Image(nsImage: app.icon)
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                            Text(app.bytes.map(CleanupFormat.bytes) ?? "")
+                                .font(.system(size: 10, weight: .medium))
+                                .monospacedDigit()
+                            Text(UninstallerFormat.age(app.lastUsed))
+                                .font(.system(size: 9))
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                    .help("Uninstall \(app.name)")
+                }
+                // Keep icons at the same width when there are fewer than four.
+                ForEach(unused.count..<4, id: \.self) { _ in Color.clear.frame(maxWidth: .infinity) }
+            }
+            // Earlier results stay, dimmed, while a new scan runs.
+            .opacity(controller.isScanning ? 0.55 : 1)
+            .animation(.easeInOut(duration: 0.2), value: controller.isScanning)
+            .transition(.opacity)
         }
     }
 
@@ -180,7 +257,19 @@ struct UninstallerSettings: View {
                     .opacity(tip.isVisible ? 1 : 0)
             }
 
-            label("Suggest Apps Not Opened In")
+            Toggle("Show Unused Apps on the Tile", isOn: $controller.showsUnusedOnTile)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .font(.system(size: 13))
+            // Both captions take the same room, so switching doesn't resize
+            // the page.
+            ZStack(alignment: .topLeading) {
+                caption("The tile shows your largest apps not opened in:")
+                    .opacity(controller.showsUnusedOnTile ? 1 : 0)
+                caption("Apps not opened in this long are listed first when you search or open the Uninstaller:")
+                    .opacity(controller.showsUnusedOnTile ? 0 : 1)
+            }
+            .animation(.snappy(duration: 0.2), value: controller.showsUnusedOnTile)
             FullWidthSegmentedPicker(
                 options: UninstallerController.UnusedThreshold.allCases.map { ($0.title, $0) },
                 selection: $controller.unusedThreshold
@@ -291,4 +380,17 @@ private struct DropTip: View {
 @MainActor
 private final class TipVisibility: ObservableObject {
     @Published var isVisible = true
+}
+
+/// A gray placeholder shape, shown where content will be once it's loaded.
+struct SkeletonBone: View {
+    var width: CGFloat
+    var height: CGFloat
+    var radius: CGFloat = 3
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: radius, style: .continuous)
+            .fill(Color.primary.opacity(0.09))
+            .frame(width: width, height: height)
+    }
 }

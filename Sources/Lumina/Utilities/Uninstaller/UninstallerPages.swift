@@ -44,7 +44,7 @@ private struct PageHeader: View {
 // MARK: - Pick an app
 
 struct UninstallerListPage: View {
-    let controller: UninstallerController
+    @Bindable var controller: UninstallerController
     @StateObject private var state = ListState()
     @FocusState private var isSearchFocused: Bool
 
@@ -70,42 +70,51 @@ struct UninstallerListPage: View {
             .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
 
             FullWidthSegmentedPicker(
-                options: ListState.Sort.allCases.map { ($0.title, $0) },
-                selection: $state.sort
+                options: UninstallerController.ListTab.allCases.map { ($0.title, $0) },
+                selection: $controller.listTab
             )
-            .accessibilityLabel("Sort By")
+            .accessibilityLabel("Show")
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {
-                    if state.query.isEmpty {
+                    if !controller.hasScanned {
+                        skeleton
+                    } else if controller.listTab == .leftBehind {
+                        let groups = controller.leftBehind.filter { state.query.isEmpty || matches($0.name) || matches($0.bundleID) }
+                        section("Files from apps you deleted")
+                        if groups.isEmpty {
+                            Text(state.query.isEmpty ? "Nothing left behind." : "No Matches")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, minHeight: 60)
+                        }
+                        ForEach(groups) { leftBehindRow($0) }
+                    } else if state.query.isEmpty {
                         let unused = sorted(controller.unusedApps)
                         if !unused.isEmpty {
                             section("Not opened in \(controller.unusedThreshold.title)")
                             ForEach(unused) { appRow($0) }
-                        }
-                        if !controller.leftBehind.isEmpty {
-                            section("Left behind by apps you deleted")
-                            ForEach(controller.leftBehind) { leftBehindRow($0) }
                         }
                         let unusedIDs = Set(unused.map(\.id))
                         section("All Apps")
                         ForEach(sorted(controller.apps.filter { !unusedIDs.contains($0.id) })) { appRow($0) }
                     } else {
                         let apps = sorted(controller.apps.filter { matches($0.name) })
-                        let leftovers = controller.leftBehind.filter { matches($0.name) || matches($0.bundleID) }
-                        if apps.isEmpty && leftovers.isEmpty {
+                        if apps.isEmpty {
                             Text("No Apps Found")
                                 .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, minHeight: 60)
                         }
                         ForEach(apps) { appRow($0) }
-                        ForEach(leftovers) { leftBehindRow($0) }
                     }
                 }
                 .padding(6)
             }
             .scrollIndicators(.never)
+            // Earlier results stay, dimmed, while a new scan runs.
+            .opacity(controller.isScanning && controller.hasScanned ? 0.55 : 1)
+            .animation(.easeInOut(duration: 0.2), value: controller.isScanning)
             .frame(height: Self.listHeight)
             .background(Color.panelSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
@@ -120,11 +129,33 @@ struct UninstallerListPage: View {
     }
 
     private func sorted(_ apps: [InstalledApp]) -> [InstalledApp] {
-        switch state.sort {
+        switch controller.listTab {
         case .size: apps.sorted { ($0.bytes ?? 0) > ($1.bytes ?? 0) }
-        case .lastOpened: apps.sorted { ($0.lastUsed ?? .distantPast) < ($1.lastUsed ?? .distantPast) }
         case .name: apps.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        case .lastOpened, .leftBehind: apps.sorted { ($0.lastUsed ?? .distantPast) < ($1.lastUsed ?? .distantPast) }
         }
+    }
+
+    /// Placeholder rows until the first scan finishes.
+    private var skeleton: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SkeletonBone(width: 120, height: 8)
+                .padding(.leading, 6)
+                .padding(.top, 6)
+            ForEach(0..<6, id: \.self) { index in
+                HStack(spacing: 9) {
+                    SkeletonBone(width: 26, height: 26, radius: 6)
+                    VStack(alignment: .leading, spacing: 5) {
+                        SkeletonBone(width: [110, 80, 130, 95, 70, 120][index], height: 9)
+                        SkeletonBone(width: [80, 100, 70, 90, 110, 60][index], height: 7)
+                    }
+                    Spacer()
+                    SkeletonBone(width: 40, height: 8)
+                }
+                .padding(.horizontal, 6)
+            }
+        }
+        .transition(.opacity)
     }
 
     private func section(_ title: String) -> some View {
@@ -196,20 +227,7 @@ struct UninstallerListPage: View {
 
 @MainActor
 private final class ListState: ObservableObject {
-    enum Sort: CaseIterable {
-        case size, lastOpened, name
-
-        var title: String {
-            switch self {
-            case .size: "Size"
-            case .lastOpened: "Last Opened"
-            case .name: "Name"
-            }
-        }
-    }
-
     @Published var query = ""
-    @Published var sort = Sort.lastOpened
 }
 
 /// A row that highlights while pressed or hovered, like a menu.
@@ -250,7 +268,7 @@ struct UninstallReviewPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            PageHeader(title: controller.plan?.title ?? "", back: controller.openList)
+            PageHeader(title: controller.plan?.title ?? "", back: { controller.openList() })
 
             if let plan = controller.plan {
                 if plan.entries.count == 1 {
@@ -477,7 +495,7 @@ struct UninstallDonePage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            PageHeader(title: "Uninstaller", back: controller.openList)
+            PageHeader(title: "Uninstaller", back: { controller.openList() })
 
             if let result = controller.result {
                 VStack(spacing: 10) {

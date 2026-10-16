@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import SwiftUI
 import UserNotifications
 
 /// One app (or the files of one deleted app) on the review page, with the
@@ -80,6 +81,20 @@ struct ProtectedApp: Codable, Hashable, Identifiable {
 @MainActor
 @Observable
 final class UninstallerController: NSObject {
+    /// The list page's tabs: three orders for the apps, and Left Behind.
+    enum ListTab: CaseIterable {
+        case size, lastOpened, name, leftBehind
+
+        var title: String {
+            switch self {
+            case .size: "Size"
+            case .lastOpened: "Last Opened"
+            case .name: "Name"
+            case .leftBehind: "Left Behind"
+            }
+        }
+    }
+
     enum UnusedThreshold: Int, CaseIterable {
         case threeMonths = 3, sixMonths = 6, oneYear = 12
 
@@ -113,6 +128,12 @@ final class UninstallerController: NSObject {
         didSet { defaults.set(try? JSONEncoder().encode(protectedApps), forKey: Keys.protected) }
     }
 
+    /// Shows the largest unused apps on the tile. Off by default: the tile
+    /// then offers search, Left Behind and the Dumpster.
+    var showsUnusedOnTile: Bool {
+        didSet { defaults.set(showsUnusedOnTile, forKey: Keys.showsUnused) }
+    }
+
     var isDropTipDismissed: Bool {
         didSet { defaults.set(isDropTipDismissed, forKey: Keys.tip) }
     }
@@ -122,6 +143,10 @@ final class UninstallerController: NSObject {
     private(set) var apps: [InstalledApp] = []
     private(set) var leftBehind: [LeftBehindApp] = []
     private(set) var hasScanned = false
+    /// A scan is under way; earlier results, if any, are still shown.
+    private(set) var isScanning = false
+    /// The list page's tab, set by whatever opened it.
+    var listTab: ListTab = .lastOpened
     /// An app just deleted in Finder, and what it left.
     private(set) var notice: LeftBehindApp?
     /// The review page's contents.
@@ -147,6 +172,7 @@ final class UninstallerController: NSObject {
         static let notices = "uninstaller.noticesDeletions"
         static let protected = "uninstaller.neverUninstall"
         static let tip = "uninstaller.dropTipDismissed"
+        static let showsUnused = "uninstaller.showsUnusedOnTile"
         static let sizes = "uninstaller.sizeCache"
     }
 
@@ -159,6 +185,7 @@ final class UninstallerController: NSObject {
         protectedApps = defaults.data(forKey: Keys.protected)
             .flatMap { try? JSONDecoder().decode([ProtectedApp].self, from: $0) } ?? []
         isDropTipDismissed = defaults.bool(forKey: Keys.tip)
+        showsUnusedOnTile = defaults.bool(forKey: Keys.showsUnused)
         sizeCache = defaults.dictionary(forKey: Keys.sizes) as? [String: [Double]] ?? [:]
         super.init()
     }
@@ -188,21 +215,53 @@ final class UninstallerController: NSObject {
         scan()
     }
 
+    /// Scans the apps, measures them and looks for files left behind, then
+    /// shows everything at once, so nothing on screen changes piece by
+    /// piece. Earlier results stay while a new scan runs.
     func scan() {
         scanTask?.cancel()
         lastScan = .now
+        isScanning = true
         let cache = sizeCache
         let home = home
         scanTask = Task {
-            let found = await Task.detached(priority: .utility) {
-                AppCatalog.scan(sizes: Self.cachedSizes(cache))
+            let (found, measured) = await Task.detached(priority: .utility) {
+                Self.catalog(cache: cache)
             }.value
             guard !Task.isCancelled else { return }
-            apps = found
-            hasScanned = true
-            await measureSizes()
-            await findLeftBehind(home: home)
+            let installed = Set(found.map(\.bundleID))
+            let candidates = await Task.detached(priority: .utility) {
+                LeftoverFinder.leftBehind(home: home, installedBundleIDs: installed)
+            }.value
+            guard !Task.isCancelled else { return }
+            // Apps installed somewhere else still count as installed.
+            let orphans = candidates.filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.bundleID) == nil }
+
+            sizeCache.merge(measured) { $1 }
+            defaults.set(sizeCache, forKey: Keys.sizes)
+            withAnimation(Motion.present) {
+                apps = found
+                leftBehind = orphans
+                hasScanned = true
+                isScanning = false
+            }
         }
+    }
+
+    /// The apps with their sizes: cached ones whose bundle hasn't changed,
+    /// measured otherwise. Also returns the new cache entries.
+    private nonisolated static func catalog(cache: [String: [Double]]) -> ([InstalledApp], [String: [Double]]) {
+        var apps = AppCatalog.scan(sizes: cachedSizes(cache))
+        var measured: [String: [Double]] = [:]
+        for index in apps.indices where apps[index].bytes == nil {
+            if Task.isCancelled { break }
+            let url = apps[index].url
+            let bytes = CleanupScanner.size(of: url)
+            let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate?.timeIntervalSince1970 ?? 0
+            apps[index].bytes = bytes
+            measured[url.path] = [modified, Double(bytes)]
+        }
+        return (apps, measured)
     }
 
     /// Sizes of app bundles whose modification date hasn't changed.
@@ -216,38 +275,12 @@ final class UninstallerController: NSObject {
         return sizes
     }
 
-    /// Measures the apps without a size, the ones suggested first.
-    private func measureSizes() async {
-        let cutoff = Calendar.current.date(byAdding: .month, value: -unusedThreshold.rawValue, to: .now) ?? .distantPast
-        let pending = apps.filter { $0.bytes == nil }
-            .sorted { ($0.lastUsed ?? .distantPast) < cutoff && ($1.lastUsed ?? .distantPast) >= cutoff }
-        for app in pending {
-            if Task.isCancelled { return }
-            let url = app.url
-            let (bytes, modified) = await Task.detached(priority: .utility) {
-                (CleanupScanner.size(of: url),
-                 (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate?.timeIntervalSince1970 ?? 0)
-            }.value
-            if let index = apps.firstIndex(where: { $0.id == app.id }) { apps[index].bytes = bytes }
-            sizeCache[url.path] = [modified, Double(bytes)]
-        }
-        defaults.set(sizeCache, forKey: Keys.sizes)
-    }
-
-    private func findLeftBehind(home: URL) async {
-        let installed = Set(apps.map(\.bundleID))
-        let candidates = await Task.detached(priority: .utility) {
-            LeftoverFinder.leftBehind(home: home, installedBundleIDs: installed)
-        }.value
-        // Apps installed somewhere else still count as installed.
-        leftBehind = candidates.filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.bundleID) == nil }
-    }
-
     // MARK: - Pages
 
-    func openList() {
+    func openList(tab: ListTab = .lastOpened) {
         guard let store else { return }
         result = nil
+        listTab = tab
         store.swapPage { store.uninstallerPage = .list }
     }
 
