@@ -172,7 +172,7 @@ scripts/render-marketing.sh
 
 The script compiles Lumina's sources, minus its `@main`, together with `scripts/marketing/main.swift` into a small renderer. It also rewrites the gallery between the `features` markers in this README. That file holds the scenes, layouts and copy; `Feature.all` lists each feature's card. Features come from the app, `Utility.catalog` and the Library's **Add New** items, so a new utility gets a card (and a pill in the hero) on the next run. Until it has an entry in `Feature.all`, its card is plain and the script prints a warning.
 
-While it runs it turns on Caffeine and Stay Green and samples the system monitor for about 45 seconds, so the CPU graph has history. System readings and clock times are live; battery devices are fixed sample devices. The light hero sets only the renderer's own appearance, never the system's.
+While it runs it turns on Caffeine and Stay Green and samples the system monitor for about 45 seconds, so the CPU graph has history. System readings and clock times are live; battery devices and Cleanup's results are fixed samples (the renderer builds with `MARKETING` defined for that). The light hero sets only the renderer's own appearance, never the system's.
 
 ## Adding a utility
 

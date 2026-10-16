@@ -226,6 +226,22 @@ final class CleanupController {
         NSWorkspace.shared.open(url)
     }
 
+    #if MARKETING
+    /// Shows fixed results instead of this Mac's, for the images
+    /// scripts/render-marketing.sh makes (it builds with MARKETING defined).
+    func showSampleResults(_ sample: [CleanupCategory: Int64], availableCapacity: Int64) {
+        task?.cancel()
+        findings = sample.mapValues { bytes in
+            CleanupFinding(items: [CleanupItem(url: URL(fileURLWithPath: "/sample"), bytes: bytes)])
+        }
+        enabledCategories = Set(sample.keys)
+        hasFullDiskAccess = true
+        self.availableCapacity = availableCapacity
+        lastScan = .now
+        phase = .ready
+    }
+    #endif
+
     private func refreshCapacity() {
         let values = try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
         availableCapacity = values?.volumeAvailableCapacityForImportantUsage

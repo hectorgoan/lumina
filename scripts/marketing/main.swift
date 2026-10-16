@@ -931,14 +931,19 @@ MainActor.assumeIsolated {
     CaffeineController.shared.toggle()
     StayGreenController.shared.toggle()
     SystemMonitor.shared.attach()
-    // Only looks: the tile shows what this Mac has to clean.
-    CleanupController.shared.scan()
     _ = AppearanceController.shared
 }
 // Let the monitors fill most of the CPU graph's one-minute history.
 RunLoop.main.run(until: Date().addingTimeInterval(45))
 
 MainActor.assumeIsolated {
+    // Fixed results, like the battery widgets' sample devices: a real scan
+    // depends on when this Mac was last cleaned.
+    CleanupController.shared.showSampleResults(
+        [.caches: 4_100_000_000, .developer: 2_300_000_000, .trash: 820_000_000, .logs: 6_000_000],
+        availableCapacity: 221_200_000_000
+    )
+
     let featuresDirectory = marketing.appendingPathComponent("features")
     try? FileManager.default.removeItem(at: featuresDirectory)
     try! FileManager.default.createDirectory(at: featuresDirectory, withIntermediateDirectories: true)
