@@ -53,7 +53,6 @@ struct AppearanceModule: View {
             }
         }
         .animation(.snappy(duration: 0.25), value: controller.mode)
-        .animation(.snappy, value: controller.needsPermission)
     }
 
     private func notice(_ message: String, action: (String, () -> Void)?) -> some View {
@@ -71,7 +70,6 @@ struct AppearanceModule: View {
         }
         .font(.system(size: 11))
         .foregroundStyle(.secondary)
-        .transition(.opacity)
     }
 }
 
@@ -163,5 +161,7 @@ private struct AppearanceThumbnail: View {
         .frame(maxWidth: .infinity)
         .clipShape(shape)
         .overlay { shape.strokeBorder(.black.opacity(0.12), lineWidth: 0.5) }
+        // Static artwork: flatten its gradients and shadow into one layer.
+        .drawingGroup()
     }
 }

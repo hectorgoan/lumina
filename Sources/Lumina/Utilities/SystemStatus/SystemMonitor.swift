@@ -15,7 +15,7 @@ final class SystemMonitor {
         let isEfficiency: Bool
     }
 
-    struct Fan {
+    struct Fan: Equatable {
         let rpm: Double
         /// Speed as a fraction of the fan's maximum.
         let fraction: Double
@@ -81,10 +81,16 @@ final class SystemMonitor {
 
     private func sample() async {
         sampleCPU()
-        memory = Self.readMemoryUsage()
+        // Readings are kept at the precision the widgets show, and only
+        // assigned when that changes, so tiny fluctuations don't redraw them.
+        let memory = (Self.readMemoryUsage() * 100).rounded() / 100
+        if memory != self.memory { self.memory = memory }
+
         let reading = await sensors.read()
-        temperature = reading.temperature
-        fan = reading.fan
+        let temperature = reading.temperature?.rounded()
+        if temperature != self.temperature { self.temperature = temperature }
+        let fan = reading.fan.map { Fan(rpm: ($0.rpm / 10).rounded() * 10, fraction: ($0.fraction * 100).rounded() / 100) }
+        if fan != self.fan { self.fan = fan }
     }
 
     // MARK: - CPU

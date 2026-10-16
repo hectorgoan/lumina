@@ -72,7 +72,7 @@ private struct MenuBarPreview: View {
                 .font(.system(size: 12, weight: .medium))
                 .padding(.horizontal, 10)
                 .frame(height: 24)
-                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .background(Color.panelControl, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
 
                 Text(display == .off ? "Not shown in the menu bar" : "Shown in the menu bar")
                     .font(.system(size: 10))

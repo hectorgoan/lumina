@@ -28,15 +28,39 @@ final class UtilityStore {
         didSet { defaults.set(try? JSONEncoder().encode(batteryWidgets), forKey: Self.batteryWidgetsKey) }
     }
 
+    /// Edit mode as far as layout goes: it widens the panel for the
+    /// library, instantly.
     var isEditing = false {
         didSet {
             if !isEditing {
                 settingsUtilityID = nil
                 isAddingWorldClock = false
                 isAddingBatteryWidget = false
+                isLibraryPresented = false
+                isLibraryExpanded = false
             }
         }
     }
+
+    /// Whether the panel has made room for the library. It widens with
+    /// animation before the library fades in, and narrows after it fades out.
+    var isLibraryExpanded = false
+
+    /// Whether the current page is shown; it fades out while pages swap.
+    var isPageVisible = true
+
+    /// Tiles kept invisible while they're added to or removed from the grid.
+    var fadingUtilityIDs: Set<String> = []
+
+    /// Whether a page or tile transition is under way.
+    @ObservationIgnored var isTransitioning = false
+
+    /// Whether the library and the edit controls are shown. It changes with
+    /// animation just after the panel widens, and just before it narrows.
+    var isLibraryPresented = false
+
+    /// Whether tiles show their edit badges and can be dragged.
+    var showsEditControls: Bool { isEditing && isLibraryPresented }
 
     /// The utility whose settings page is open, if any.
     var settingsUtilityID: String?
@@ -130,12 +154,14 @@ final class UtilityStore {
 
     /// Adds a clock for the city after the visible utilities and closes the
     /// picker.
-    func addWorldClock(for city: WorldClockCity) {
+    @discardableResult
+    func addWorldClock(for city: WorldClockCity) -> String? {
         let clock = WorldClock(id: "worldClock-\(UUID().uuidString)", cityCode: city.code)
-        guard let utility = Utility.worldClock(clock) else { return }
+        guard let utility = Utility.worldClock(clock) else { return nil }
         worldClocks.append(clock)
         insertVisible(utility)
         isAddingWorldClock = false
+        return utility.id
     }
 
     func worldClock(withID id: String) -> WorldClock? {
@@ -151,11 +177,13 @@ final class UtilityStore {
 
     /// Adds a battery widget of the given size after the visible utilities
     /// and closes the picker.
-    func addBatteryWidget(size: BatteryWidget.Size) {
+    @discardableResult
+    func addBatteryWidget(size: BatteryWidget.Size) -> String {
         let widget = BatteryWidget(id: "batteries-\(UUID().uuidString)", size: size)
         batteryWidgets.append(widget)
         insertVisible(Utility.batteryWidget(widget))
         isAddingBatteryWidget = false
+        return widget.id
     }
 
     func batteryWidget(withID id: String) -> BatteryWidget? {
