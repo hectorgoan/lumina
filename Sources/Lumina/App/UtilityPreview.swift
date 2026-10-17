@@ -86,13 +86,13 @@ struct UtilityPreview: View {
         }
 
         if store.isAddingBatteryWidget {
-            let size = store.newBatteryWidgetSize
-            let devices = BatteryWidget(id: "preview", size: size).shownDevices(from: monitor.devices)
+            let widget = store.newBatteryWidget
+            let size = widget.size
             return Subject(
                 id: "batteries-\(size.rawValue)",
                 width: metrics.width(forSpan: size.tileSize.span),
                 caption: "\(size.title) · \(size.summary)",
-                content: AnyView(BatteryWidgetContent(size: size, devices: devices, name: BatteryWidget(id: "preview", size: size, name: store.newBatteryWidgetName).title))
+                content: AnyView(BatteryWidgetContent(size: size, devices: widget.shownDevices(from: monitor.devices), name: widget.title))
             )
         }
 
@@ -126,7 +126,7 @@ struct UtilityPreview: View {
 /// Lays its view out at full size but takes up `scale` times the room,
 /// for a view drawn with a matching `scaleEffect(_:anchor: .topLeading)`.
 /// A scale effect alone doesn't change the room a view takes.
-private struct ScaledLayout: Layout {
+struct ScaledLayout: Layout {
     let scale: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

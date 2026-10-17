@@ -79,6 +79,15 @@ struct BatteryWidget: Codable, Hashable {
         return trimmed.isEmpty ? nil : trimmed
     }
 
+    /// The widget at another size, keeping only as many chosen devices as
+    /// it shows.
+    func resized(to newSize: Size) -> BatteryWidget {
+        var resized = self
+        resized.size = newSize
+        resized.chosenDevices = Array(chosenDevices.prefix(newSize.capacity))
+        return resized
+    }
+
     /// The devices to show, out of those currently reporting a battery.
     func shownDevices(from devices: [BatteryDevice]) -> [BatteryDevice] {
         let shown = choosesAutomatically
