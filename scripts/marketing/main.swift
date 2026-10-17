@@ -34,12 +34,103 @@ enum DemoDevice {
 enum Tile {
     case utility(String)
     case clock(String)
-    case batteries(BatteryWidget.Size, [BatteryDevice])
+    case batteries(BatteryWidget.Size, [BatteryDevice], name: String? = nil)
+    /// A media widget, playing a demo track.
+    case media(MediaWidget, DemoTrack)
 }
 
 /// Battery widget ID → the demo devices it shows.
 @MainActor enum DemoBatteries {
     static var byWidget: [String: [BatteryDevice]] = [:]
+}
+
+/// Made-up music with drawn covers: renders never show real albums, nor
+/// depend on what's playing on this Mac.
+struct DemoTrack {
+    let title: String
+    let artist: String
+    let album: String
+    let duration: Double
+    let elapsed: Double
+    var isPlaying = true
+    /// The cover's colors and the shape drawn on it.
+    let colors: [Color]
+    let motif: Motif
+
+    enum Motif { case sun, waves, rings }
+
+    static let midnight = DemoTrack(
+        title: "Midnight Drive", artist: "Neon Coast", album: "Afterglow", duration: 221, elapsed: 84,
+        colors: [Color(red: 0.98, green: 0.42, blue: 0.40), Color(red: 0.45, green: 0.16, blue: 0.62)], motif: .sun
+    )
+    static let harbour = DemoTrack(
+        title: "Paper Boats", artist: "The Quiet Hours", album: "Harbour Lights", duration: 194, elapsed: 121,
+        colors: [Color(red: 0.25, green: 0.75, blue: 0.80), Color(red: 0.07, green: 0.22, blue: 0.45)], motif: .waves
+    )
+    static let orbit = DemoTrack(
+        title: "Slow Orbit", artist: "Lumen Field", album: "Satellites", duration: 263, elapsed: 32,
+        colors: [Color(red: 1.0, green: 0.78, blue: 0.30), Color(red: 0.90, green: 0.32, blue: 0.20)], motif: .rings
+    )
+
+    @MainActor
+    var display: MediaDisplay {
+        MediaDisplay(
+            nowPlaying: NowPlaying(
+                title: title, artist: artist, album: album, duration: duration,
+                elapsed: elapsed, timestamp: .now, rate: isPlaying ? 1 : 0, isPlaying: isPlaying, pid: 0
+            ),
+            artwork: cover(),
+            appName: "Music",
+            appIcon: NSWorkspace.shared.icon(forFile: "/System/Applications/Music.app")
+        )
+    }
+
+    /// The cover, drawn at 600 × 600.
+    @MainActor
+    private func cover() -> NSImage {
+        let art = ZStack {
+            LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+            switch motif {
+            case .sun:
+                Circle().fill(.white.opacity(0.9)).frame(width: 230).offset(y: 70)
+                ForEach(0..<5) { index in
+                    Rectangle().fill(colors[1].opacity(0.85)).frame(height: 14).offset(y: 120 + CGFloat(index) * 34)
+                }
+            case .waves:
+                ForEach(0..<6) { index in
+                    Capsule().stroke(.white.opacity(0.75 - Double(index) * 0.1), lineWidth: 12)
+                        .frame(width: 520, height: 120).offset(y: CGFloat(index) * 52 - 60)
+                }
+            case .rings:
+                ForEach(0..<5) { index in
+                    Circle().stroke(.white.opacity(0.85 - Double(index) * 0.14), lineWidth: 10)
+                        .frame(width: 90 + CGFloat(index) * 90)
+                }
+                Circle().fill(.white).frame(width: 40)
+            }
+        }
+        .frame(width: 600, height: 600)
+        .clipped()
+        let renderer = ImageRenderer(content: art)
+        renderer.scale = 1
+        return renderer.nsImage ?? NSImage()
+    }
+}
+
+/// Media widget ID → the demo track it plays.
+@MainActor enum DemoMedia {
+    static var byWidget: [String: MediaDisplay] = [:]
+}
+
+extension MediaWidget {
+    /// A widget for the renders: Small with its controls, Medium and Large
+    /// with or without the album art behind.
+    static func demo(_ size: Size, artBackground: Bool = false, controls: SmallControls? = nil) -> MediaWidget {
+        var widget = MediaWidget(id: "new", size: size)
+        widget.showsArtBackground = artBackground
+        widget.smallControls = controls
+        return widget
+    }
 }
 
 /// A store showing exactly `tiles`, in order. Uses a throwaway defaults
@@ -53,9 +144,13 @@ func makeStore(_ tiles: [Tile], more: [Tile] = []) -> UtilityStore {
             return id
         case .clock(let code):
             return store.addWorldClock(for: WorldClockCity.city(withCode: code)!)
-        case .batteries(let size, let devices):
-            let id = store.addBatteryWidget(size: size)
+        case .batteries(let size, let devices, let name):
+            let id = store.addBatteryWidget(BatteryWidget(id: "new", size: size, name: name))
             DemoBatteries.byWidget[id] = devices
+            return id
+        case .media(let widget, let track):
+            let id = store.addMediaWidget(widget)
+            DemoMedia.byWidget[id] = track.display
             return id
         }
     }
@@ -88,6 +183,8 @@ let heroTiles: [Tile] = [
     .utility("appearance"),
     .utility("keyboardLock"),
     .utility("quitAll"),
+    // Fills Keyboard Lock and Quit All's row.
+    .media(.demo(.small, controls: .playPauseNext), .orbit),
 ]
 
 /// The hero's panel: `heroTiles`, plus a tile for every feature it doesn't
@@ -96,12 +193,13 @@ let heroTiles: [Tile] = [
 @MainActor
 func heroLayout() -> [Tile] {
     var utilityIDs = Set<String>()
-    var hasClock = false, hasBatteries = false
+    var hasClock = false, hasBatteries = false, hasMedia = false
     for tile in heroTiles {
         switch tile {
         case .utility(let id): utilityIDs.insert(id)
         case .clock: hasClock = true
         case .batteries: hasBatteries = true
+        case .media: hasMedia = true
         }
     }
     var tiles = heroTiles
@@ -110,6 +208,7 @@ func heroLayout() -> [Tile] {
         let isShown = !utilityIDs.isDisjoint(with: feature.utilityIDs)
             || (feature.newItem == .worldClock && hasClock)
             || (feature.newItem == .batteries && hasBatteries)
+            || (feature.newItem == .media && hasMedia)
         if !isShown, let tile = feature.tiles.first {
             tiles.append(tile)
         }
@@ -179,13 +278,25 @@ struct Feature {
         Feature(
             slug: "batteries", name: "Batteries", symbol: "battery.75percent", tint: .green,
             headline: "Every battery, one look.",
-            detail: "Your Mac, AirPods, keyboard, mouse and more, in four sizes. Choose the devices to show, or let Lumina show the ones running lowest.",
+            detail: "Your Mac, AirPods, keyboard, mouse and more, in four sizes. Name each widget, choose its devices, or let Lumina show the ones running lowest.",
             newItem: .batteries,
             tiles: [
                 .batteries(.small, [DemoDevice.mac]),
                 .batteries(.small, [DemoDevice.trackpad]),
-                .batteries(.medium, [DemoDevice.keyboard, DemoDevice.mouse]),
-                .batteries(.large, [DemoDevice.headphones, DemoDevice.airPods, DemoDevice.airPodsCase, DemoDevice.mac]),
+                .batteries(.medium, [DemoDevice.keyboard, DemoDevice.mouse], name: "Desk"),
+                .batteries(.large, [DemoDevice.headphones, DemoDevice.airPods, DemoDevice.airPodsCase, DemoDevice.mac], name: "Travel Kit"),
+            ]
+        ),
+        Feature(
+            slug: "media", name: "Media", symbol: "music.note", tint: .pink,
+            headline: "What’s playing, at hand.",
+            detail: "Album art, the app it’s playing in, and play, pause, skip and seek, for Music, Spotify, podcasts or a browser. Three sizes, with the cover as the background if you like.",
+            newItem: .media,
+            tiles: [
+                .media(.demo(.medium, artBackground: true), .midnight),
+                .media(.demo(.small, controls: .playPauseNext), .orbit),
+                .media(.demo(.small, controls: .playPause), .harbour),
+                .media(.demo(.large), .harbour),
             ]
         ),
         Feature(
@@ -248,7 +359,7 @@ struct Feature {
         Feature(
             slug: "customize", name: "Customize", symbol: "square.grid.2x2.fill", tint: .purple,
             headline: "Make it yours.",
-            detail: "Drag tiles into any order, hide the ones you don’t need, and add world clocks and batteries from the Library.",
+            detail: "Drag tiles into any order, hide the ones you don’t need, and add media, world clocks and batteries from the Library, previewing each first. However many you add, the panel scrolls rather than running off the screen.",
             tiles: [.utility("caffeine"), .utility("stayGreen"), .clock("MAD"), .batteries(.medium, [DemoDevice.keyboard, DemoDevice.mouse]), .utility("pomodoro")],
             isEditing: true
         ),
@@ -403,7 +514,9 @@ struct TileContent: View {
 
     var body: some View {
         if let widget = store.batteryWidget(withID: utility.id) {
-            BatteryWidgetContent(size: widget.size, devices: DemoBatteries.byWidget[utility.id] ?? [])
+            BatteryWidgetContent(size: widget.size, devices: DemoBatteries.byWidget[utility.id] ?? [], name: widget.title)
+        } else if let widget = store.mediaWidget(withID: utility.id) {
+            MediaWidgetContent(widget: widget, display: DemoMedia.byWidget[utility.id])
         } else {
             utility.content()
         }
@@ -580,14 +693,11 @@ struct LibraryReplica: View {
             .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             section("Hidden")
-            ForEach(Array(hidden), id: \.id) { row($0.symbol, $0.name, $0.size.title) }
+            ForEach(Array(hidden), id: \.id) { row($0.symbol, $0.name, $0.size.title, isPreviewed: $0.id == previewed?.id) }
             section("Add New").padding(.top, 8)
             ForEach(LibraryDrag.NewItem.allCases, id: \.self) { row($0.symbol, $0.title, $0.detail) }
             Spacer(minLength: 0)
-            Text("Drag into the panel or click +")
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity)
+            if let previewed { well(previewed) }
         }
         .padding(12)
         .frame(maxHeight: .infinity, alignment: .top)
@@ -601,7 +711,37 @@ struct LibraryReplica: View {
             .padding(.top, 4)
     }
 
-    private func row(_ symbol: String, _ title: String, _ detail: String) -> some View {
+    /// The row under the pointer: a half tile, so it fits the well.
+    private var previewed: Utility? {
+        store.hiddenUtilities.prefix(4).first { $0.size == .half } ?? store.hiddenUtilities.first
+    }
+
+    /// The Library's preview well, showing the pointed-at row's tile.
+    private func well(_ utility: Utility) -> some View {
+        let width = TileGridMetrics(width: 296, spacing: 10).width(forSpan: utility.size.span)
+        let scale = min(1, 186 / width)
+        return VStack(spacing: 8) {
+            ModuleTile(isEditing: false, isLifted: false) {
+                utility.content()
+            } badges: {
+                EmptyView()
+            }
+            .frame(width: width)
+            .scaleEffect(scale)
+            .frame(width: width * scale, height: 80 * scale)
+            .frame(maxHeight: .infinity)
+            VStack(spacing: 1) {
+                Text("\(utility.name) · \(utility.size.title)").font(.system(size: 10, weight: .medium))
+                Text("Click + or drag it into the panel").font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: 160, maxHeight: 160)
+        .background(Color.panelTrack.opacity(0.5), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .environment(store)
+    }
+
+    private func row(_ symbol: String, _ title: String, _ detail: String, isPreviewed: Bool = false) -> some View {
         HStack(spacing: 8) {
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .medium))
@@ -617,6 +757,9 @@ struct LibraryReplica: View {
                 .foregroundStyle(.green)
         }
         .padding(.vertical, 4)
+        .padding(.horizontal, 6)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.panelTrack.opacity(isPreviewed ? 0.7 : 0)))
+        .padding(.horizontal, -6)
     }
 }
 
