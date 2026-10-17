@@ -46,6 +46,10 @@
 </tr>
 <tr>
 <td width="50%"><a href="docs/marketing/features/uninstaller.png"><img src="docs/marketing/readme/features/uninstaller.jpg" alt="Uninstaller: Gone means gone."></a></td>
+<td width="50%"><a href="docs/marketing/features/quick-actions.png"><img src="docs/marketing/readme/features/quick-actions.jpg" alt="Quick Actions: One click, done."></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="docs/marketing/features/more-section.png"><img src="docs/marketing/readme/features/more-section.jpg" alt="More: Ready, out of sight."></a></td>
 <td width="50%"><a href="docs/marketing/features/customize.png"><img src="docs/marketing/readme/features/customize.jpg" alt="Customize: Make it yours."></a></td>
 </tr>
 </table>
