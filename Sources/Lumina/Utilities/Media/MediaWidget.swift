@@ -107,23 +107,42 @@ struct MediaDisplay {
     }
 }
 
-/// A media widget in the grid, following what's playing.
+/// A media widget in the grid, following what's playing. Going from
+/// something playing to nothing (or back) changes its height, so it fades
+/// out, resizes and fades back in rather than jumping.
 struct MediaWidgetView: View {
     @Environment(UtilityStore.self) private var store
     let widgetID: String
     private let controller = MediaController.shared
+    @StateObject private var presence = SwapStage<Bool>()
+    @StateObject private var last = LastDisplay()
 
     var body: some View {
         if let widget = store.mediaWidget(withID: widgetID) {
+            let live = MediaDisplay.live(controller)
             MediaWidgetContent(
                 widget: widget,
-                display: .live(controller),
+                // While it fades out, what was playing stays on show.
+                display: presence.value == true ? (live ?? last.display) : nil,
                 isUnavailable: controller.status == .unavailable,
                 controller: controller
             )
+            .fadesWithoutColorShift()
+            .opacity(presence.isVisible ? 1 : 0)
             .onAppear { controller.start() }
+            .onChange(of: controller.nowPlaying, initial: true) { _, playing in
+                if playing != nil { last.display = .live(controller) }
+                presence.set(playing != nil)
+            }
         }
     }
+}
+
+/// The last thing shown playing. Not published: it's only read while the
+/// widget fades out.
+@MainActor
+private final class LastDisplay: ObservableObject {
+    var display: MediaDisplay?
 }
 
 /// A media widget's layout for a size. Small is the album art edge to
@@ -137,6 +156,9 @@ struct MediaWidgetContent: View {
     var controller: MediaController? = nil
 
     @Environment(\.colorScheme) private var colorScheme
+    /// Large's progress row, which comes and goes with the app's duration.
+    @StateObject private var progress = RevealStage()
+    @StateObject private var lastDuration = LastDuration()
 
     private static let tileShape = RoundedRectangle(cornerRadius: 20, style: .continuous)
     /// How long artwork takes to blend into the next.
@@ -175,16 +197,16 @@ struct MediaWidgetContent: View {
     // MARK: - Sizes
 
     /// The art edge to edge (drawn by the backdrop): a click plays or
-    /// pauses, and a play glyph shows while paused.
+    /// pauses, as the glyph in the middle says.
     private func small(_ display: MediaDisplay) -> some View {
         Button { controller?.togglePlayPause() } label: {
             ZStack {
                 Color.clear
-                Image(systemName: "play.fill")
+                Image(systemName: display.nowPlaying.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 14))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.5), radius: 3)
-                    .opacity(display.nowPlaying.isPlaying ? 0 : 1)
+                    .contentTransition(.symbolEffect(.replace))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 42)
@@ -241,17 +263,35 @@ struct MediaWidgetContent: View {
                 .contentTransition(.opacity)
                 Spacer(minLength: 0)
             }
-            if widget.showsProgress, let duration = display.nowPlaying.duration {
-                MediaProgress(nowPlaying: display.nowPlaying, duration: duration) { controller?.seek(to: $0) }
-                    .allowsHitTesting(controller != nil)
-            }
-            HStack {
-                Spacer()
-                controls(display, size: 14, prominent: true)
-                Spacer()
+            VStack(spacing: 0) {
+                // Not every app says how long it is: the row fades out
+                // before its room closes, and back in once it opens.
+                MediaProgress(nowPlaying: display.nowPlaying, duration: display.nowPlaying.duration ?? lastDuration.value) {
+                    controller?.seek(to: $0)
+                }
+                .allowsHitTesting(controller != nil && display.nowPlaying.duration != nil)
+                // The round button's own room already reads as a gap; this
+                // evens out the space above and below the progress.
+                .padding(.bottom, 4)
+                .fadesWithoutColorShift()
+                .opacity(progress.isVisible ? 1 : 0)
+                .frame(height: progress.isShown ? nil : 0, alignment: .top)
+                .clipped()
+
+                HStack {
+                    Spacer()
+                    controls(display, size: 14, prominent: true)
+                    Spacer()
+                }
             }
         }
         .animation(Self.artworkBlend, value: display.nowPlaying.title)
+        .onChange(of: display.nowPlaying.duration, initial: true) { _, duration in
+            if let duration { lastDuration.value = duration }
+        }
+        .onChange(of: widget.showsProgress && display.nowPlaying.duration != nil, initial: true) { _, shows in
+            progress.set(shows)
+        }
     }
 
     // MARK: - Pieces
@@ -458,6 +498,12 @@ private struct MediaProgress: View {
             ? String(format: "%d:%02d:%02d", hours, minutes, secs)
             : String(format: "%d:%02d", minutes, secs)
     }
+}
+
+/// The last duration shown, for the progress row while it fades out.
+@MainActor
+private final class LastDuration: ObservableObject {
+    var value: Double = 1
 }
 
 private final class Scrub: ObservableObject {

@@ -173,27 +173,6 @@ extension UtilityStore {
     /// turns while a scan runs) can keep that report from ever coming,
     /// which left the panel sitting empty until it stopped.
     func step(_ animation: Animation, lasting duration: TimeInterval, _ change: () -> Void, completion: @escaping @MainActor () -> Void) {
-        let once = StepCompletion(completion)
-        withAnimation(animation, completionCriteria: .removed, change) { once.run() }
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(duration + 0.05))
-            once.run()
-        }
-    }
-}
-
-/// Runs a step's completion only once, whichever signal comes first.
-@MainActor
-private final class StepCompletion {
-    private var action: (@MainActor () -> Void)?
-
-    init(_ action: @escaping @MainActor () -> Void) {
-        self.action = action
-    }
-
-    func run() {
-        let action = action
-        self.action = nil
-        action?()
+        Motion.step(animation, lasting: duration, change, completion: completion)
     }
 }
