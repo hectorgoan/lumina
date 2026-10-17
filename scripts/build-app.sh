@@ -27,6 +27,12 @@ fi
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(date +%Y%m%d%H%M%S)" "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
+# The now-playing helper, loaded by the system's Perl (see
+# Helpers/MediaRemoteHelper.m and MediaController).
+clang -fobjc-arc -dynamiclib -O2 -arch arm64 -arch x86_64 -mmacosx-version-min=26.0 \
+    -framework Foundation Helpers/MediaRemoteHelper.m \
+    -o "$APP/Contents/Resources/MediaRemoteHelper.dylib"
+
 # Sign with a stable identity when there is one, so macOS keeps Lumina's
 # privacy permissions (Accessibility, Automation) across rebuilds. Ad hoc
 # signatures change with every build, so macOS may ask for them again.
@@ -57,6 +63,7 @@ codesign --force --sign "$IDENTITY" -o runtime --preserve-metadata=entitlements 
 codesign --force --sign "$IDENTITY" -o runtime "$SPARKLE/Versions/B/Autoupdate"
 codesign --force --sign "$IDENTITY" -o runtime "$SPARKLE/Versions/B/Updater.app"
 codesign --force --sign "$IDENTITY" -o runtime "$SPARKLE"
+codesign --force --sign "$IDENTITY" "$APP/Contents/Resources/MediaRemoteHelper.dylib"
 codesign --force --sign "$IDENTITY" "$APP"
 
 # Refresh Launch Services so Finder and Notification Center pick up the icon.
