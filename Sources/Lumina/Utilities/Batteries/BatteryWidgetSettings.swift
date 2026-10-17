@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// A battery widget's settings: its size, and which devices it shows.
+/// A battery widget's settings: its name, its size, and which devices it
+/// shows.
 struct BatteryWidgetSettings: View {
     @Environment(UtilityStore.self) private var store
     let widgetID: String
@@ -14,6 +15,28 @@ struct BatteryWidgetSettings: View {
 
     private func content(for widget: BatteryWidget) -> some View {
         VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Name")
+                    .font(.system(size: 13))
+                Spacer()
+                // Plain, on the panel's own fill, like the More section's.
+                TextField("Batteries", text: Binding(
+                    get: { widget.name ?? "" },
+                    set: { name in
+                        var updated = widget
+                        updated.name = name
+                        update(updated)
+                    }
+                ))
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+                .padding(.horizontal, 8)
+                .frame(width: 140, height: 24)
+                .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            }
+
+            Divider()
+
             Text("Size")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)

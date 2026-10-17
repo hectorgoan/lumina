@@ -122,6 +122,9 @@ final class UtilityStore {
     /// The size chosen on the battery widget add page.
     var newBatteryWidgetSize: BatteryWidget.Size = .large
 
+    /// The name typed on the battery widget add page.
+    var newBatteryWidgetName = ""
+
     /// The city highlighted on the world clock add page.
     var previewCityCode: String?
 
@@ -273,8 +276,10 @@ final class UtilityStore {
     /// Adds a battery widget of the given size after the visible utilities
     /// and closes the picker.
     @discardableResult
-    func addBatteryWidget(size: BatteryWidget.Size) -> String {
-        let widget = BatteryWidget(id: "batteries-\(UUID().uuidString)", size: size)
+    func addBatteryWidget(size: BatteryWidget.Size, name: String? = nil) -> String {
+        var widget = BatteryWidget(id: "batteries-\(UUID().uuidString)", size: size)
+        widget.name = name
+        newBatteryWidgetName = ""
         batteryWidgets.append(widget)
         insertVisible(Utility.batteryWidget(widget))
         isAddingBatteryWidget = false

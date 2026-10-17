@@ -92,7 +92,7 @@ struct UtilityPreview: View {
                 id: "batteries-\(size.rawValue)",
                 width: metrics.width(forSpan: size.tileSize.span),
                 caption: "\(size.title) · \(size.summary)",
-                content: AnyView(BatteryWidgetContent(size: size, devices: devices))
+                content: AnyView(BatteryWidgetContent(size: size, devices: devices, name: BatteryWidget(id: "preview", size: size, name: store.newBatteryWidgetName).title))
             )
         }
 
