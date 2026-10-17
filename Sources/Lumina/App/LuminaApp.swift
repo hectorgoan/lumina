@@ -16,6 +16,9 @@ struct LuminaApp: App {
         UNUserNotificationCenter.current().delegate = notificationPresenter
         UninstallerController.shared.store = store
         MenuBarPanel.store = store
+        // Know what's playing before the panel first opens, so media
+        // widgets don't fill in as it appears.
+        if !store.mediaWidgets.isEmpty { MediaController.shared.start() }
     }
 
     var body: some Scene {

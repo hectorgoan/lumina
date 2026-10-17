@@ -3,6 +3,7 @@ import SwiftUI
 /// The content of the menu bar window, laid out like a Control Center applet.
 struct PanelView: View {
     @Environment(UtilityStore.self) private var store
+    private let space = PanelSpace.shared
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -16,6 +17,7 @@ struct PanelView: View {
                 // while the glass there is empty.
                 sidebar
                     .frame(width: 230)
+                    .frame(maxHeight: space.contentLimit)
                     .background(Color.panelSurface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .fadesWithoutColorShift()
                     .opacity(store.isLibraryPresented ? 1 : 0)
@@ -25,7 +27,14 @@ struct PanelView: View {
             }
         }
         .fixedSize(horizontal: false, vertical: true)
-        .padding(12)
+        .padding(PanelSpace.padding)
+        .background(WindowReader { window in
+            space.window = window
+            space.updateScreen()
+        })
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            space.updateScreen()
+        }
         .onAppear { store.isPanelOpen = true }
         .onDisappear {
             store.isPanelOpen = false
@@ -72,11 +81,14 @@ struct PanelView: View {
                 MorePageDots()
                     .fadesWithoutColorShift()
                     .opacity(store.isEditing ? 0 : 1)
+                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { space.dotsHeight = $0 }
+                    .onDisappear { space.dotsHeight = 0 }
             }
 
             Spacer(minLength: 0)
 
             PanelFooter()
+                .onGeometryChange(for: CGFloat.self, of: \.size.height) { space.footerHeight = $0 }
         }
     }
 
@@ -87,6 +99,8 @@ struct PanelView: View {
             WorldClockPicker()
         } else if store.isAddingBatteryWidget {
             BatteryWidgetPicker()
+        } else if store.isAddingMediaWidget {
+            MediaWidgetPicker()
         } else if store.isMoreSettingsOpen {
             MoreSettingsPage()
         } else if let page = store.uninstallerPage {
@@ -103,7 +117,14 @@ private struct UtilityGrid: View {
     @StateObject private var drop = LibraryDropTarget()
     @StateObject private var tileFrames = TileFrames()
     @StateObject private var banner = BannerState()
+    @StateObject private var measure = GridMeasure()
     private let updates = UpdateController.shared
+    private let space = PanelSpace.shared
+
+    /// Room around the tiles inside the scroll view, so edit badges and a
+    /// lifted tile aren't clipped.
+    private static let scrollInset: CGFloat = 8
+    private static let topID = "top"
 
     var body: some View {
         VStack(spacing: 12) {
@@ -137,6 +158,50 @@ private struct UtilityGrid: View {
                     .padding(.vertical, 16)
             }
 
+            tiles
+                .onGeometryChange(for: CGFloat.self, of: \.size.height) { measure.viewport = $0 }
+        }
+        .onGeometryChange(for: CGFloat.self, of: \.size.height) { measure.total = $0 }
+        .onChange(of: measure.chrome, initial: true) { _, chrome in
+            if space.gridChrome != chrome { space.gridChrome = chrome }
+        }
+        // An update found while the panel is open: the panel makes room
+        // first, then the banner fades in; dismissing it goes in reverse.
+        .onChange(of: updates.availableVersion, initial: true) { old, new in
+            banner.update(to: new, animated: old != new, store: store)
+        }
+    }
+
+    /// The tiles, in a scroll view that stops just above the bottom of the
+    /// screen; until then it's as tall as they are, and doesn't scroll.
+    private var tiles: some View {
+        let inset = Self.scrollInset
+        return ScrollViewReader { proxy in
+            ScrollView(.vertical) {
+                tileGrid
+                    .padding(inset)
+                    .id(Self.topID)
+            }
+            .frame(maxHeight: space.gridLimit + inset * 2)
+            .scrollEdgeEffectStyle(.soft, for: .vertical)
+            // No rubber band while everything fits.
+            .scrollBounceBehavior(.basedOnSize)
+            .padding(-inset)
+            // The top is home: back there as the panel closes, so it opens
+            // there without a jump.
+            .onChange(of: store.isPanelOpen) { _, isOpen in
+                if !isOpen { proxy.scrollTo(Self.topID, anchor: .top) }
+            }
+            // A tile just added comes into view as it fades in.
+            .onChange(of: store.highlightedUtilityID) { _, id in
+                guard let id else { return }
+                withAnimation(.smooth(duration: 0.4)) { proxy.scrollTo(id) }
+            }
+        }
+    }
+
+    private var tileGrid: some View {
+        VStack(spacing: 0) {
             // One grid in every mode, the More section's header included,
             // so opening it and entering edit mode reuse the panel's usual
             // steps; in edit mode, dragging a tile past the header moves it
@@ -185,13 +250,6 @@ private struct UtilityGrid: View {
                 }
                 .allowsHitTesting(false)
             }
-
-
-        }
-        // An update found while the panel is open: the panel makes room
-        // first, then the banner fades in; dismissing it goes in reverse.
-        .onChange(of: updates.availableVersion, initial: true) { old, new in
-            banner.update(to: new, animated: old != new, store: store)
         }
         // Utilities dragged in from the library land at the end.
         .dropDestination(for: String.self) { payloads, _ in
@@ -219,6 +277,16 @@ private struct UtilityGrid: View {
         // Tiles being added or removed fade while the grid makes or closes
         // their space; so do the section's while it opens or closes.
         .opacity(store.fadingUtilityIDs.contains(utility.id) || (isInMore && isMoreTileHidden) ? 0 : 1)
+        // Just added: a ring glows around it for a moment.
+        .overlay {
+            RoundedRectangle(cornerRadius: 23, style: .continuous)
+                .strokeBorder(.tint, lineWidth: 2.5)
+                .shadow(color: .accentColor.opacity(0.8), radius: 6)
+                .padding(-3)
+                .opacity(store.highlightedUtilityID == utility.id ? 1 : 0)
+                .allowsHitTesting(false)
+        }
+        .id(utility.id)
         .anchorPreference(key: MoreSectionBounds.self, value: .bounds) { isInMore && store.isLibraryExpanded ? [$0] : [] }
         .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { frame in
             tileFrames.rects[utility.id] = frame
@@ -263,6 +331,16 @@ private struct UtilityGrid: View {
             }
         }
     }
+}
+
+/// The grid page's height and its tiles', for the room the page needs
+/// besides its tiles; the difference goes to `PanelSpace`.
+@MainActor
+private final class GridMeasure: ObservableObject {
+    @Published var total: CGFloat = 0
+    @Published var viewport: CGFloat = 0
+
+    var chrome: CGFloat { max(0, total - viewport) }
 }
 
 /// The update banner as shown, trailing the update controller so its
