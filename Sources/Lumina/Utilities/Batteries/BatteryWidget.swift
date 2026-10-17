@@ -65,10 +65,19 @@ struct BatteryWidget: Codable, Hashable {
     /// The utility ID.
     let id: String
     var size: Size
+    /// The name the user gave it, like "Desk". Optional, so widgets saved
+    /// before names existed still load.
+    var name: String?
     /// Shows the devices with the lowest charge first instead of chosen ones.
     var choosesAutomatically = true
     /// The chosen devices, in the order they were chosen.
     var chosenDevices: [ChosenDevice] = []
+
+    /// The name as shown, or nil when it has none.
+    var title: String? {
+        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
 
     /// The devices to show, out of those currently reporting a battery.
     func shownDevices(from devices: [BatteryDevice]) -> [BatteryDevice] {
@@ -83,7 +92,7 @@ extension Utility {
     static func batteryWidget(_ widget: BatteryWidget) -> Utility {
         Utility(
             id: widget.id,
-            name: "Batteries",
+            name: widget.title ?? "Batteries",
             symbol: "battery.75percent",
             size: widget.size.tileSize,
             content: { AnyView(BatteryWidgetView(widgetID: widget.id)) },
@@ -101,17 +110,32 @@ struct BatteryWidgetView: View {
 
     var body: some View {
         if let widget = store.batteryWidget(withID: widgetID) {
-            BatteryWidgetContent(size: widget.size, devices: widget.shownDevices(from: BatteryMonitor.shared.devices))
+            BatteryWidgetContent(size: widget.size, devices: widget.shownDevices(from: BatteryMonitor.shared.devices), name: widget.title)
         }
     }
 }
 
-/// The widget's layout for a size: rings for S, M and L, a list for XL.
+/// The widget's layout for a size: rings for S, M and L, a list for XL,
+/// with its name, if it has one, as a quiet caption above. S has no room
+/// for it: there the name shows on hover.
 struct BatteryWidgetContent: View {
     let size: BatteryWidget.Size
     let devices: [BatteryDevice]
+    var name: String? = nil
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let name, size != .small {
+                Text(name)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            widget
+        }
+    }
+
+    private var widget: some View {
         Group {
             if devices.isEmpty {
                 VStack(spacing: 3) {
@@ -140,7 +164,7 @@ struct BatteryWidgetContent: View {
         return HStack(spacing: 0) {
             ForEach(Array(devices.enumerated()), id: \.element.id) { index, device in
                 if index > 0 { Spacer(minLength: 4) }
-                BatteryRingItem(device: device, ringSize: ringSize)
+                BatteryRingItem(device: device, ringSize: ringSize, widgetName: size == .small ? name : nil)
             }
         }
         .padding(.horizontal, devices.count > 1 ? 8 : 0)
@@ -196,10 +220,12 @@ struct BatteryRing: View {
     }
 }
 
-/// A ring with the charge below; the device's name shows on hover.
+/// A ring with the charge below; the device's name shows on hover, after
+/// the widget's when the widget has no room to show it.
 private struct BatteryRingItem: View {
     let device: BatteryDevice
     let ringSize: CGFloat
+    var widgetName: String?
 
     var body: some View {
         VStack(spacing: 4) {
@@ -209,9 +235,9 @@ private struct BatteryRingItem: View {
                 .monospacedDigit()
                 .contentTransition(.numericText())
         }
-        .help(device.name)
+        .help(widgetName.map { "\($0) · \(device.name)" } ?? device.name)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(device.name)
+        .accessibilityLabel(widgetName.map { "\($0), \(device.name)" } ?? device.name)
         .accessibilityValue(BatteryFormat.accessibilityValue(device))
     }
 }

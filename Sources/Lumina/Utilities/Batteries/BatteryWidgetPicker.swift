@@ -33,6 +33,18 @@ struct BatteryWidgetPicker: View {
             )
             .accessibilityLabel("Size")
 
+            HStack {
+                Text("Name")
+                    .font(.system(size: 13))
+                Spacer()
+                TextField("Optional", text: $store.newBatteryWidgetName)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .padding(.horizontal, 8)
+                    .frame(width: 160, height: 24)
+                    .background(Color.panelTrack, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            }
+
             Text("Shows the devices with the lowest charge first. Choose devices in its settings after adding it.")
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
@@ -48,10 +60,16 @@ struct BatteryWidgetPicker: View {
     }
 
     private func add() {
-        store.swapPage(adding: { store.addBatteryWidget(size: store.newBatteryWidgetSize) })
+        store.swapPage(adding: {
+            store.addBatteryWidget(size: store.newBatteryWidgetSize, name: store.newBatteryWidgetName)
+        })
     }
 
     private func close() {
-        store.swapPage { store.isAddingBatteryWidget = false }
+        let close = {
+            store.isAddingBatteryWidget = false
+            store.newBatteryWidgetName = ""
+        }
+        store.swapPage(close)
     }
 }
