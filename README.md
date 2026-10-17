@@ -123,6 +123,8 @@ Utilities you want set up and ready, but not always on show, go in the **More** 
 
 You can also rename it, and have it remember whether it was open.
 
+However many utilities you add, the panel never runs off the screen: once it reaches the bottom, your utilities scroll under the footer.
+
 Lumina remembers your layout.
 
 ## Building
