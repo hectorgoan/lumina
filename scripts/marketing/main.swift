@@ -224,6 +224,13 @@ struct Feature {
             tiles: [.utility("uninstaller")]
         ),
         Feature(
+            slug: "quick-actions", name: "Quick Actions", symbol: "zzz", tint: .indigo,
+            headline: "One click, done.",
+            detail: "Put your Mac to sleep, silence every sound, or empty the Trash, in half or quarter tiles. Sleep and Empty Trash ask for a second click first.",
+            utilityIDs: ["sleep", "silence", "emptyTrash", "compactSleep", "compactSilence", "compactEmptyTrash"],
+            tiles: [.utility("sleep"), .utility("silence"), .utility("emptyTrash"), .utility("compactSleep"), .utility("compactSilence")]
+        ),
+        Feature(
             slug: "customize", name: "Customize", symbol: "square.grid.2x2.fill", tint: .purple,
             headline: "Make it yours.",
             detail: "Drag tiles into any order, hide the ones you don’t need, and add world clocks and batteries from the Library.",
