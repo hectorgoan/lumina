@@ -40,6 +40,23 @@ struct MediaWidget: Codable, Hashable {
     var showsArtBackground = false
     /// Elapsed and remaining time on Large, where it can be dragged to seek.
     var showsProgress = true
+    /// Small's buttons. Chosen when a Small one is added; nil until then
+    /// (and for widgets from before the choice, which play and pause).
+    var smallControls: SmallControls?
+
+    enum SmallControls: String, Codable, CaseIterable {
+        /// A click anywhere plays or pauses.
+        case playPause
+        /// The left half plays or pauses, the right half skips.
+        case playPauseNext
+
+        var title: String {
+            switch self {
+            case .playPause: "Play/Pause"
+            case .playPauseNext: "Play/Pause & Next"
+            }
+        }
+    }
 }
 
 extension Utility {
@@ -198,7 +215,15 @@ struct MediaWidgetContent: View {
 
     /// The art edge to edge (drawn by the backdrop): a click plays or
     /// pauses, as the glyph in the middle says.
-    private func small(_ display: MediaDisplay) -> some View {
+    @ViewBuilder private func small(_ display: MediaDisplay) -> some View {
+        if widget.smallControls == .playPauseNext {
+            smallHalves(display)
+        } else {
+            smallSingle(display)
+        }
+    }
+
+    private func smallSingle(_ display: MediaDisplay) -> some View {
         Button { controller?.togglePlayPause() } label: {
             ZStack {
                 Color.clear
@@ -217,6 +242,52 @@ struct MediaWidgetContent: View {
         .animation(.snappy(duration: 0.2), value: display.nowPlaying.isPlaying)
         .help(display.nowPlaying.isPlaying ? "Pause \(display.nowPlaying.title)" : "Play \(display.nowPlaying.title)")
         .accessibilityLabel(display.nowPlaying.title)
+    }
+
+    /// Two halves: the left plays or pauses, the right skips, with a
+    /// hairline between, each half the size of the tile's half.
+    private func smallHalves(_ display: MediaDisplay) -> some View {
+        Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: 42)
+            .overlay {
+                HStack(spacing: 0) {
+                    Button { controller?.togglePlayPause() } label: {
+                        smallGlyph(display.nowPlaying.isPlaying ? "pause.fill" : "play.fill", size: 14)
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                    .help(display.nowPlaying.isPlaying ? "Pause" : "Play")
+                    .accessibilityLabel(display.nowPlaying.isPlaying ? "Pause" : "Play")
+
+                    Rectangle()
+                        .fill(.white.opacity(0.35))
+                        .frame(width: 0.5)
+                        .padding(.vertical, 18)
+
+                    Button { controller?.next() } label: {
+                        smallGlyph("forward.fill", size: 12)
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                    .help("Next")
+                    .accessibilityLabel("Next")
+                }
+                .background(Color.black.opacity(0.16))
+                .clipShape(Self.tileShape)
+                .overlay(alignment: .topTrailing) { appBadge(display, size: 14).padding(5) }
+                // The halves reach the tile's edges, past its padding.
+                .padding(-12)
+            }
+            .animation(.snappy(duration: 0.2), value: display.nowPlaying.isPlaying)
+    }
+
+    private func smallGlyph(_ symbol: String, size: CGFloat) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: size, weight: .semibold))
+            .foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.5), radius: 3)
+            .contentTransition(.symbolEffect(.replace))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
     }
 
     private func medium(_ display: MediaDisplay) -> some View {
@@ -464,6 +535,10 @@ private struct MediaProgress: View {
                         Capsule()
                             .fill(Color.primary.opacity(0.85))
                             .frame(width: proxy.size.width * min(1, elapsed / duration))
+                            // Glides from one second's position to the
+                            // next, instead of stepping; follows the
+                            // pointer exactly while dragging.
+                            .animation(scrub.fraction == nil ? .linear(duration: 1) : nil, value: elapsed)
                     }
                     .frame(height: scrub.fraction == nil ? 4 : 6)
                     .frame(maxHeight: .infinity)

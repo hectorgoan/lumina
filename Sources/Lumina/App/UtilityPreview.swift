@@ -99,7 +99,7 @@ struct UtilityPreview: View {
         if store.isAddingMediaWidget {
             let widget = store.newMediaWidget
             return Subject(
-                id: "media-\(widget.size.rawValue)-\(widget.showsArtBackground)-\(widget.showsProgress)",
+                id: "media-\(widget.size.rawValue)-\(widget.showsArtBackground)-\(widget.showsProgress)-\(widget.smallControls?.rawValue ?? "")",
                 width: metrics.width(forSpan: widget.size.tileSize.span),
                 caption: "\(widget.size.title) · \(widget.size.summary)",
                 content: AnyView(MediaWidgetContent(widget: widget, display: .live(MediaController.shared) ?? .sample))

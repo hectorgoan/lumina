@@ -26,9 +26,10 @@ struct MediaWidgetPicker: View {
 
             MediaWidgetForm(widget: store.newMediaWidget, update: { store.newMediaWidget = $0 }, sizeFirst: true)
 
-            Text("Follows whatever is playing: Music, Spotify, a browser…")
+            Text(needsControls ? "Choose its controls to add it." : "Follows whatever is playing: Music, Spotify, a browser…")
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
+                .contentTransition(.opacity)
 
             Button(action: add) {
                 Text("Add Widget").frame(maxWidth: .infinity)
@@ -36,11 +37,18 @@ struct MediaWidgetPicker: View {
             .buttonStyle(.glassProminent)
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
+            .disabled(needsControls)
         }
         .onAppear { MediaController.shared.start() }
     }
 
+    /// A Small one has to have its controls chosen first.
+    private var needsControls: Bool {
+        store.newMediaWidget.size == .small && store.newMediaWidget.smallControls == nil
+    }
+
     private func add() {
+        guard !needsControls else { return }
         store.swapPage(adding: { store.addMediaWidget(store.newMediaWidget) })
     }
 

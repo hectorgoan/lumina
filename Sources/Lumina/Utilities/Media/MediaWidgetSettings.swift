@@ -26,14 +26,11 @@ struct MediaWidgetForm: View {
             if sizeFirst {
                 size
                 Divider()
-                background
+                look
             } else {
-                if widget.size != .small {
-                    background
-                    Divider()
-                }
+                look
+                Divider()
                 size
-                if widget.size == .small { smallNote }
             }
 
             if widget.size == .large {
@@ -56,24 +53,26 @@ struct MediaWidgetForm: View {
         }
     }
 
-    @ViewBuilder private var background: some View {
-        if widget.size == .small {
-            smallNote
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Background")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
+    /// Small is always the art edge to edge, so it picks its controls;
+    /// Medium and Large pick their background. Each keeps the other's
+    /// setting for when the size changes back.
+    @ViewBuilder private var look: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(widget.size == .small ? "Controls" : "Background")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+            if widget.size == .small {
+                // On the add page nothing is picked until the user picks;
+                // a widget from before the choice plays and pauses.
+                MediaControlsChoice(selection: widget.smallControls ?? (sizeFirst ? nil : .playPause)) { controls in
+                    var updated = widget
+                    updated.smallControls = controls
+                    update(updated)
+                }
+            } else {
                 MediaBackgroundChoice(widget: widget, update: update)
             }
         }
-    }
-
-    /// Small has one look; its background setting is kept for when it grows.
-    private var smallNote: some View {
-        Text("Small is the album art itself, edge to edge.")
-            .font(.system(size: 10))
-            .foregroundStyle(.secondary)
     }
 
     private var size: some View {
@@ -94,6 +93,77 @@ struct MediaWidgetForm: View {
             )
             .accessibilityLabel("Size")
         }
+    }
+}
+
+/// Small's controls, as two sketches of it: one button, or two halves.
+struct MediaControlsChoice: View {
+    let selection: MediaWidget.SmallControls?
+    let choose: (MediaWidget.SmallControls) -> Void
+    private let controller = MediaController.shared
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ForEach(MediaWidget.SmallControls.allCases, id: \.self) { option in
+                let isSelected = selection == option
+                Button { choose(option) } label: {
+                    VStack(spacing: 6) {
+                        sketch(option)
+                            .padding(8)
+                            .frame(maxWidth: .infinity)
+                            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.panelTrack.opacity(0.5)))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2.5)
+                                    .padding(-3)
+                            }
+                        Text(option.title)
+                            .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                            .foregroundStyle(isSelected ? .primary : .secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityLabel(option.title)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .animation(.snappy(duration: 0.2), value: selection)
+    }
+
+    private func sketch(_ option: MediaWidget.SmallControls) -> some View {
+        ZStack {
+            Color.clear.overlay {
+                // The cover playing now, or plain colors, which don't
+                // compete with the buttons like the sample's drawing would.
+                if let artwork = controller.artwork {
+                    Image(nsImage: artwork).resizable().scaledToFill()
+                } else {
+                    LinearGradient(
+                        colors: [Color(red: 0.95, green: 0.35, blue: 0.45), Color(red: 0.35, green: 0.2, blue: 0.75)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                }
+            }
+            Color.black.opacity(0.25)
+            HStack(spacing: 0) {
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                if option == .playPauseNext {
+                    Rectangle().fill(.white.opacity(0.4)).frame(width: 0.5).padding(.vertical, 12)
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .foregroundStyle(.white)
+        }
+        .frame(width: 44, height: 44)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

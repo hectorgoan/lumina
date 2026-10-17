@@ -167,10 +167,19 @@ final class MediaController {
         }
         restarts = 0
 
-        if let playing = message.nowPlaying {
+        if var playing = message.nowPlaying {
             nowPlayingClearing?.cancel()
             nowPlayingClearing = nil
-            nowPlaying = playing
+            // Apps re-report the position now and then, a little off from
+            // where it should be by now. Small corrections would make the
+            // progress bar twitch back and forth, so they're ignored.
+            if let current = nowPlaying, current.title == playing.title, current.artist == playing.artist,
+               current.isPlaying == playing.isPlaying,
+               abs(playing.elapsed(at: .now) - current.elapsed(at: .now)) < 1.5 {
+                playing.elapsed = current.elapsed
+                playing.timestamp = current.timestamp
+            }
+            if playing != nowPlaying { nowPlaying = playing }
             if app?.processIdentifier != playing.pid {
                 app = playing.pid > 0 ? NSRunningApplication(processIdentifier: playing.pid) : nil
             }
