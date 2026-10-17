@@ -99,6 +99,8 @@ struct PanelView: View {
             WorldClockPicker()
         } else if store.isAddingBatteryWidget {
             BatteryWidgetPicker()
+        } else if store.isAddingMediaWidget {
+            MediaWidgetPicker()
         } else if store.isMoreSettingsOpen {
             MoreSettingsPage()
         } else if let page = store.uninstallerPage {

@@ -127,12 +127,13 @@ struct UtilityLibrary: View {
 /// What the library hands to the panel when a row is dragged.
 enum LibraryDrag {
     enum NewItem: String, CaseIterable {
-        case worldClock, batteries
+        case worldClock, batteries, media
 
         var title: String {
             switch self {
             case .worldClock: "World Clock"
             case .batteries: "Batteries"
+            case .media: "Media"
             }
         }
 
@@ -140,6 +141,7 @@ enum LibraryDrag {
             switch self {
             case .worldClock: "Half width · choose a city"
             case .batteries: "Four sizes"
+            case .media: "Three sizes · what’s playing"
             }
         }
 
@@ -147,6 +149,7 @@ enum LibraryDrag {
             switch self {
             case .worldClock: "clock"
             case .batteries: "battery.75percent"
+            case .media: "music.note"
             }
         }
     }
@@ -180,6 +183,7 @@ enum LibraryDrag {
             switch item {
             case .worldClock: store.isAddingWorldClock = true
             case .batteries: store.isAddingBatteryWidget = true
+            case .media: store.isAddingMediaWidget = true
             }
         }
     }
@@ -305,6 +309,16 @@ private struct LibraryPreviewWell: View {
                 width: metrics.width(forSpan: widget.size.tileSize.span),
                 caption: "Batteries · Four sizes",
                 content: AnyView(BatteryWidgetContent(size: .large, devices: widget.shownDevices(from: BatteryMonitor.shared.devices)))
+            )
+        case .new(.media):
+            return Preview(
+                id: "new.media",
+                width: metrics.width(forSpan: Utility.Size.full.span),
+                caption: "Media · Three sizes",
+                content: AnyView(MediaWidgetContent(
+                    widget: MediaWidget(id: "preview", size: .large),
+                    display: .live(MediaController.shared) ?? .sample
+                ))
             )
         case nil:
             return nil

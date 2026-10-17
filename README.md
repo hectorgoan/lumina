@@ -103,6 +103,10 @@ Requires macOS 26 or later.
 
   Temperature and fan speed come from the Mac's System Management Controller, which has no public API. Fan readings are hidden on Macs without fans.
 - **World Clock**: a half-width card per city with its flag, city code (MAD, NYC, TYO…), current time, day and night, and how far ahead or behind it is. Add as many as you like from edit mode. In a clock's settings (the gear badge), choose to show it in the menu bar too, as its own item with just the time or with the city code as well. Click a clock in the menu bar to see its day and offset, or to hide it.
+- **Media**: what's playing on your Mac, from any app (Music, Spotify, Podcasts, a browser…), with its album art and the app it's playing in. Play or pause, skip, and on Large drag the progress bar to jump; click the art to bring the app forward. Comes in three sizes: Small (the album art edge to edge; click to play or pause, or choose two halves: play/pause and next), Medium (art, title and controls) and Large (with the app's name and progress). For Medium and Large, choose a **Plain** or **Album Art** background (the cover, blurred, behind the controls) when you add it or in its settings. Covers blend into each other as tracks change. Apps that give no artwork show their icon instead.
+
+  macOS has no public API for this, and since macOS 15.4 its private MediaRemote framework only answers apps Apple entitles. Lumina asks through the system's own Perl, which is, using a small helper library it ships. If a macOS update closes that door, the widget says it's not available.
+
 - **Batteries**: the charge of your Mac and its Bluetooth accessories (AirPods and their case, keyboards, mice, trackpads), the same devices macOS's own Batteries widget lists. Comes in four sizes: Small (1 device), Medium (2), Large (4) and Extra Large (a list of 6). By default it shows the devices with the lowest charge first; when you add it or later in its settings, change the size or choose devices yourself. Give it a name, like “Desk” or “Travel Kit”, when you add it or in its settings: it shows as a small caption above the devices (on Small, on hover). Devices appear as they connect.
 
   The Mac's battery comes from a public API. Accessory levels come from `IOPSCopyPowerSourcesByType`, which IOKit exports but doesn't declare publicly.
@@ -112,7 +116,7 @@ Click **Edit Utilities** at the bottom of the panel to customize it. The Library
 - Drag the modules to rearrange them.
 - Click the eye badge on a module to hide it; it moves to the Library. Bring it back with its **+** or by dragging it into the panel.
 - Click the gear badge to open a utility's settings, for utilities that have them. While a settings or add page is open, the Library makes way for a live preview of the tile, and comes back when you go back.
-- Under **Add New** in the Library, add a **Batteries** widget (pick a size, a name and its devices, and see it in the preview) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
+- Under **Add New** in the Library, add a **Batteries** widget (pick a size, a name and its devices, and see it in the preview) a **Media** widget (pick a size and a background), or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
 - Search the Library by name.
 - Point at a row to preview it at the bottom of the Library, as it will look in the panel.
 - A utility you add glows for a moment where it lands, and the panel scrolls to it if it’s out of sight.

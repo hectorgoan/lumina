@@ -9,6 +9,7 @@ final class UtilityStore {
     private static let hiddenKey = "hiddenUtilities"
     private static let worldClocksKey = "worldClocks"
     private static let batteryWidgetsKey = "batteryWidgets"
+    private static let mediaWidgetsKey = "mediaWidgets"
     private static let moreKey = "more.utilities"
     private static let moreStyleKey = "more.style"
     private static let moreNameKey = "more.name"
@@ -31,6 +32,10 @@ final class UtilityStore {
 
     private(set) var batteryWidgets: [BatteryWidget] {
         didSet { defaults.set(try? JSONEncoder().encode(batteryWidgets), forKey: Self.batteryWidgetsKey) }
+    }
+
+    private(set) var mediaWidgets: [MediaWidget] {
+        didSet { defaults.set(try? JSONEncoder().encode(mediaWidgets), forKey: Self.mediaWidgetsKey) }
     }
 
     // MARK: More section
@@ -117,6 +122,12 @@ final class UtilityStore {
     /// Whether the battery widget size picker is open.
     var isAddingBatteryWidget = false
 
+    /// Whether the media widget add page is open.
+    var isAddingMediaWidget = false
+
+    /// The widget being set up on the media widget add page.
+    var newMediaWidget = MediaWidget(id: "new", size: .large)
+
     /// The Uninstaller page shown in place of the grid, if any.
     var uninstallerPage: UninstallerPage?
 
@@ -133,7 +144,7 @@ final class UtilityStore {
     /// Whether a settings or add page is open, so edit mode's sidebar shows
     /// a preview instead of the Library.
     var isConfiguring: Bool {
-        settingsUtilityID != nil || isAddingWorldClock || isAddingBatteryWidget || isMoreSettingsOpen
+        settingsUtilityID != nil || isAddingWorldClock || isAddingBatteryWidget || isAddingMediaWidget || isMoreSettingsOpen
     }
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -150,7 +161,11 @@ final class UtilityStore {
         let batteries = defaults.data(forKey: Self.batteryWidgetsKey)
             .flatMap { try? JSONDecoder().decode([BatteryWidget].self, from: $0) } ?? []
         batteryWidgets = batteries
+        let media = defaults.data(forKey: Self.mediaWidgetsKey)
+            .flatMap { try? JSONDecoder().decode([MediaWidget].self, from: $0) } ?? []
+        mediaWidgets = media
         let all = catalog + clocks.compactMap(Utility.worldClock) + batteries.map(Utility.batteryWidget)
+            + media.map(Utility.mediaWidget)
 
         let savedOrder = defaults.stringArray(forKey: Self.orderKey) ?? []
         let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
@@ -181,6 +196,7 @@ final class UtilityStore {
         isMoreSettingsOpen = false
         isAddingWorldClock = false
         isAddingBatteryWidget = false
+        isAddingMediaWidget = false
     }
 
     /// The utilities shown outside edit mode.
@@ -316,6 +332,39 @@ final class UtilityStore {
         }
     }
 
+    // MARK: - Media widgets
+
+    /// Adds a media widget set up like `draft` (the add page's) after the
+    /// visible utilities, closes the add page and starts a fresh draft.
+    @discardableResult
+    func addMediaWidget(_ draft: MediaWidget) -> String {
+        var widget = draft
+        widget.id = "media-\(UUID().uuidString)"
+        resetNewMediaWidget()
+        mediaWidgets.append(widget)
+        insertVisible(Utility.mediaWidget(widget))
+        isAddingMediaWidget = false
+        return widget.id
+    }
+
+    /// Starts the add page over, keeping the size and background last picked.
+    func resetNewMediaWidget() {
+        newMediaWidget.id = "new"
+    }
+
+    func mediaWidget(withID id: String) -> MediaWidget? {
+        mediaWidgets.first { $0.id == id }
+    }
+
+    /// Saves a widget's new configuration, rebuilding its utility in place.
+    func updateMediaWidget(_ widget: MediaWidget) {
+        guard let index = mediaWidgets.firstIndex(where: { $0.id == widget.id }) else { return }
+        mediaWidgets[index] = widget
+        if let position = utilities.firstIndex(where: { $0.id == widget.id }) {
+            utilities[position] = Utility.mediaWidget(widget)
+        }
+    }
+
     private func insertVisible(_ utility: Utility) {
         var updated = utilities
         let insertionIndex = updated.firstIndex { hiddenIDs.contains($0.id) } ?? updated.endIndex
@@ -328,6 +377,7 @@ final class UtilityStore {
         guard utility.isRemovable else { return }
         worldClocks.removeAll { $0.id == utility.id }
         batteryWidgets.removeAll { $0.id == utility.id }
+        mediaWidgets.removeAll { $0.id == utility.id }
         hiddenIDs.remove(utility.id)
         moreIDs.remove(utility.id)
         utilities.removeAll { $0.id == utility.id }
