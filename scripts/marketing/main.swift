@@ -45,9 +45,9 @@ enum Tile {
 /// A store showing exactly `tiles`, in order. Uses a throwaway defaults
 /// suite, so renders don't depend on (or change) the saved layout.
 @MainActor
-func makeStore(_ tiles: [Tile]) -> UtilityStore {
+func makeStore(_ tiles: [Tile], more: [Tile] = []) -> UtilityStore {
     let store = UtilityStore(defaults: UserDefaults(suiteName: "lumina.render.\(UUID().uuidString)")!)
-    let ids = tiles.compactMap { tile -> String? in
+    let ids = (tiles + more).compactMap { tile -> String? in
         switch tile {
         case .utility(let id):
             return id
@@ -67,6 +67,12 @@ func makeStore(_ tiles: [Tile]) -> UtilityStore {
     }
     let byID = Dictionary(uniqueKeysWithValues: store.utilities.map { ($0.id, $0) })
     store.reorder(ids.compactMap { byID[$0] })
+    if !more.isEmpty {
+        // The last `more.count` tiles go in the More section, shown open.
+        let all = ids.compactMap { byID[$0] }
+        store.reorder(main: Array(all.dropLast(more.count)), more: Array(all.suffix(more.count)))
+        store.isMoreOpen = true
+    }
     return store
 }
 
@@ -100,7 +106,7 @@ func heroLayout() -> [Tile] {
     }
     var tiles = heroTiles
     // Edit mode isn't a tile.
-    for feature in Feature.everything where !feature.isEditing {
+    for feature in Feature.everything where !feature.isEditing && feature.moreTiles.isEmpty {
         let isShown = !utilityIDs.isDisjoint(with: feature.utilityIDs)
             || (feature.newItem == .worldClock && hasClock)
             || (feature.newItem == .batteries && hasBatteries)
@@ -133,6 +139,8 @@ struct Feature {
     var isEditing = false
     /// Something to show beside the tiles, like a settings page.
     var accessory: Accessory? = nil
+    /// Tiles shown in the More section, open, below `tiles`.
+    var moreTiles: [Tile] = []
 
     enum Accessory { case keepOpen }
 
@@ -229,6 +237,13 @@ struct Feature {
             detail: "Put your Mac to sleep, silence every sound, or empty the Trash, in half or quarter tiles. Sleep and Empty Trash ask for a second click first.",
             utilityIDs: ["sleep", "silence", "emptyTrash", "compactSleep", "compactSilence", "compactEmptyTrash"],
             tiles: [.utility("sleep"), .utility("silence"), .utility("emptyTrash"), .utility("compactSleep"), .utility("compactSilence")]
+        ),
+        Feature(
+            slug: "more-section", name: "More", symbol: "rectangle.stack.fill", tint: .teal,
+            headline: "Ready, out of sight.",
+            detail: "Keep utilities set up but tucked away in the More section. Open it as a row below your tiles, a second page, or a stack of cards.",
+            tiles: [.utility("caffeine"), .utility("stayGreen")],
+            moreTiles: [.utility("keyboardLock"), .utility("quitAll"), .utility("compactSilence"), .utility("sleep"), .utility("emptyTrash")]
         ),
         Feature(
             slug: "customize", name: "Customize", symbol: "square.grid.2x2.fill", tint: .purple,
@@ -401,6 +416,31 @@ struct Tiles: View {
     var isEditing = false
 
     var body: some View {
+        if !store.moreUtilities.isEmpty {
+            // The utilities on show, the More section's header, and its
+            // utilities.
+            VStack(spacing: 10) {
+                grid(store.mainUtilities)
+                MoreHeader().environment(store)
+                grid(store.moreUtilities)
+            }
+            .frame(width: 296)
+        } else {
+            plain
+        }
+    }
+
+    private func grid(_ utilities: [Utility]) -> some View {
+        TileGridLayout(spacing: 10) {
+            ForEach(utilities, id: \.id) { utility in
+                tile(utility).layoutValue(key: TileSpan.self, value: utility.size.span)
+            }
+        }
+        .frame(width: 296)
+        .environment(store)
+    }
+
+    @ViewBuilder private var plain: some View {
         let utilities = store.visibleUtilities
         let span = utilities.map(\.size.span).reduce(0, +)
         let metrics = TileGridMetrics(width: 296, spacing: 10)
@@ -839,7 +879,7 @@ struct FeatureVisual: View {
             if feature.tiles.isEmpty {
                 return AnyView(FeatureIcon(symbol: feature.symbol, tint: feature.tint, size: 150))
             }
-            let store = makeStore(feature.tiles)
+            let store = makeStore(feature.tiles, more: feature.moreTiles)
             // The glass's wallpaper offset: about where it lands on the card.
             let origin = CGPoint(x: 420, y: 60)
             let panel = Panel(
