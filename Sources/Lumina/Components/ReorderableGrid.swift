@@ -12,6 +12,9 @@ struct ReorderableGrid<Item: Identifiable, Content: View>: View {
     var spacing: CGFloat = 10
     /// The number of columns (1 to 4) an item spans.
     var span: (Item) -> Int
+    /// Whether an item can be picked up; others stay put while the rest
+    /// move around them.
+    var canDrag: (Item) -> Bool = { _ in true }
     @ViewBuilder var content: (_ item: Item, _ isLifted: Bool) -> Content
 
     @StateObject private var drag = DragState<Item.ID>()
@@ -31,8 +34,8 @@ struct ReorderableGrid<Item: Identifiable, Content: View>: View {
                     // Attached to the tile itself so controls inside it
                     // (like edit badges) stay clickable.
                     .contentShape(Rectangle())
-                    .gesture(dragGesture(for: item.id), isEnabled: isEditing)
-                    .pointerStyle(isEditing ? (isLifted ? .grabActive : .grabIdle) : nil)
+                    .gesture(dragGesture(for: item.id), isEnabled: isEditing && canDrag(item))
+                    .pointerStyle(isEditing && canDrag(item) ? (isLifted ? .grabActive : .grabIdle) : nil)
                     .offset(isLifted ? drag.offset : .zero)
                     .zIndex(isLifted ? 1 : 0)
                     // Keep the lifted tile pinned under the pointer instead of

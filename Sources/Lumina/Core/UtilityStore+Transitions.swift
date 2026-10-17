@@ -39,6 +39,50 @@ extension UtilityStore {
         }
     }
 
+    // MARK: - More section
+
+    /// Opens the section (room is made, then its tiles fade in) or closes
+    /// it (its tiles fade out, then the room closes).
+    func toggleMore() {
+        guard !isTransitioning else { return }
+        isTransitioning = true
+        // The Stack's header changes too (the stacked card or the open
+        // title), so it fades out, swaps while the panel resizes, and fades
+        // back in, both ways.
+        if isMoreOpen || moreStyle == .stack {
+            let opening = !isMoreOpen
+            step(Motion.dismiss, lasting: Motion.dismissDuration) {
+                self.isMoreFading = true
+            } completion: {
+                self.step(Motion.resize, lasting: Motion.resizeDuration) {
+                    self.isMoreOpen = opening
+                } completion: {
+                    withAnimation(Motion.present) { self.isMoreFading = false }
+                    self.isTransitioning = false
+                }
+            }
+        } else {
+            step(Motion.resize, lasting: Motion.resizeDuration) {
+                self.isMoreFading = true
+                self.isMoreOpen = true
+            } completion: {
+                withAnimation(Motion.present) { self.isMoreFading = false }
+                self.isTransitioning = false
+            }
+        }
+    }
+
+    /// The Pages style's switch: the whole page fades, swaps and fades in.
+    func showMorePage(_ open: Bool) {
+        // Requests during a turn are dropped, rather than applied at once.
+        guard open != isMoreOpen, !isTransitioning else { return }
+        swapPage { self.isMoreOpen = open }
+    }
+
+    func openMoreSettings() {
+        swapPage { self.isMoreSettingsOpen = true }
+    }
+
     // MARK: - Tiles
 
     /// Hides a visible utility: it fades out, then the grid closes the gap.

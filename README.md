@@ -4,7 +4,7 @@
 
 <h1 align="center">Lumina</h1>
 
-<p align="center">A macOS menu bar app that hosts small utilities to help you focus, styled like a Control Center applet.</p>
+<p align="center">Focus tools and a tidy Mac, in one fast, configurable menu bar panel styled like Control Center.</p>
 
 <p align="center">
   <a href="docs/marketing/hero-dark.png">
@@ -46,6 +46,10 @@
 </tr>
 <tr>
 <td width="50%"><a href="docs/marketing/features/uninstaller.png"><img src="docs/marketing/readme/features/uninstaller.jpg" alt="Uninstaller: Gone means gone."></a></td>
+<td width="50%"><a href="docs/marketing/features/quick-actions.png"><img src="docs/marketing/readme/features/quick-actions.jpg" alt="Quick Actions: One click, done."></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="docs/marketing/features/more-section.png"><img src="docs/marketing/readme/features/more-section.jpg" alt="More: Ready, out of sight."></a></td>
 <td width="50%"><a href="docs/marketing/features/customize.png"><img src="docs/marketing/readme/features/customize.jpg" alt="Customize: Make it yours."></a></td>
 </tr>
 </table>
@@ -87,6 +91,10 @@ Requires macOS 26 or later.
   - Apps on its **Never Suggest or Uninstall** list are never suggested or removed, and Apple's apps are always protected.
 
   It only looks in your user Library and matches files by the app's exact bundle ID or name, never partial ones. Checking an app's container may make macOS ask once to let Lumina access other apps' data.
+- **Quick actions**, each at half width, with a quarter-width version that starts hidden (show it in edit mode):
+  - **Sleep**: puts your Mac to sleep. Click, then click again within three seconds to confirm.
+  - **Silence**: mutes all sound from your Mac, and follows mute changes made elsewhere. Some outputs, like many HDMI displays, can't be muted.
+  - **Empty Trash**: empties the Trash through Finder, after a second click. It shows how much is in the Trash when Lumina has Full Disk Access.
 - **Keyboard**: lock the keyboard so you can clean it. Every key, including media and brightness keys, is ignored until you click the tile again; the mouse and trackpad keep working. Needs Accessibility permission.
 - **Quit All**: quit every open app with one click, as if you pressed ⌘Q in each. Apps with unsaved changes still ask to save. In its settings, choose apps to keep open; Finder and Lumina are never quit.
 - **System**: CPU, memory, CPU temperature and fan speed as gauges, with load for each core, grouped into efficiency and performance cores. Two alternative layouts start hidden; show them in edit mode:
@@ -106,6 +114,14 @@ Click **Edit Utilities** at the bottom of the panel to customize it. The Library
 - Click the gear badge to open a utility's settings, for utilities that have them. While a settings or add page is open, the Library makes way for a live preview of the tile, and comes back when you go back.
 - Under **Add New** in the Library, add a **Batteries** widget (pick a size and see it with your devices in the preview) or a **World Clock** (search by city, country or code; use the arrow keys and Return, or click). Clocks and battery widgets show a remove badge (−) instead of the eye.
 - Search the Library by name.
+
+Utilities you want set up and ready, but not always on show, go in the **More** section: in edit mode, drag them below its header. Outside edit mode the section stays closed until you open it. In its settings (the gear badge on its header in edit mode, a right-click on the section, or **More Section Settings…** in the **…** menu), choose how it looks:
+
+- **Row** (the default): a row under your utilities with their icons; click to open it below.
+- **Pages**: a second page of tiles; click the dots to switch.
+- **Stack**: a stack of cards that fans out when clicked.
+
+You can also rename it, and have it remember whether it was open.
 
 Lumina remembers your layout.
 

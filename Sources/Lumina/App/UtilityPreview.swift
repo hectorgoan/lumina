@@ -76,6 +76,15 @@ struct UtilityPreview: View {
     private var subject: Subject? {
         let metrics = TileGridMetrics(width: 296, spacing: 10)
 
+        if store.isMoreSettingsOpen {
+            return Subject(
+                id: "more-\(store.moreStyle.rawValue)",
+                width: Self.tileArea.width,
+                caption: "\(store.moreStyle.title) · \(store.moreStyle.summary)",
+                content: AnyView(MoreStyleThumbnail(style: store.moreStyle, scale: 2).frame(maxWidth: .infinity))
+            )
+        }
+
         if store.isAddingBatteryWidget {
             let size = store.newBatteryWidgetSize
             let devices = BatteryWidget(id: "preview", size: size).shownDevices(from: monitor.devices)
