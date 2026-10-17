@@ -34,22 +34,25 @@
 </tr>
 <tr>
 <td width="50%"><a href="docs/marketing/features/batteries.png"><img src="docs/marketing/readme/features/batteries.jpg" alt="Batteries: Every battery, one look."></a></td>
+<td width="50%"><a href="docs/marketing/features/media.png"><img src="docs/marketing/readme/features/media.jpg" alt="Media: What’s playing, at hand."></a></td>
+</tr>
+<tr>
 <td width="50%"><a href="docs/marketing/features/system.png"><img src="docs/marketing/readme/features/system.jpg" alt="System: Your Mac’s vitals."></a></td>
-</tr>
-<tr>
 <td width="50%"><a href="docs/marketing/features/appearance.png"><img src="docs/marketing/readme/features/appearance.jpg" alt="Appearance: Light or dark, instantly."></a></td>
+</tr>
+<tr>
 <td width="50%"><a href="docs/marketing/features/keyboard-lock.png"><img src="docs/marketing/readme/features/keyboard-lock.jpg" alt="Keyboard Lock: Clean your keyboard, not your document."></a></td>
-</tr>
-<tr>
 <td width="50%"><a href="docs/marketing/features/quit-all.png"><img src="docs/marketing/readme/features/quit-all.jpg" alt="Quit All: A fresh start, in one click."></a></td>
+</tr>
+<tr>
 <td width="50%"><a href="docs/marketing/features/cleanup.png"><img src="docs/marketing/readme/features/cleanup.jpg" alt="Cleanup: Junk out, space back."></a></td>
-</tr>
-<tr>
 <td width="50%"><a href="docs/marketing/features/uninstaller.png"><img src="docs/marketing/readme/features/uninstaller.jpg" alt="Uninstaller: Gone means gone."></a></td>
-<td width="50%"><a href="docs/marketing/features/quick-actions.png"><img src="docs/marketing/readme/features/quick-actions.jpg" alt="Quick Actions: One click, done."></a></td>
 </tr>
 <tr>
+<td width="50%"><a href="docs/marketing/features/quick-actions.png"><img src="docs/marketing/readme/features/quick-actions.jpg" alt="Quick Actions: One click, done."></a></td>
 <td width="50%"><a href="docs/marketing/features/more-section.png"><img src="docs/marketing/readme/features/more-section.jpg" alt="More: Ready, out of sight."></a></td>
+</tr>
+<tr>
 <td width="50%"><a href="docs/marketing/features/customize.png"><img src="docs/marketing/readme/features/customize.jpg" alt="Customize: Make it yours."></a></td>
 </tr>
 </table>
