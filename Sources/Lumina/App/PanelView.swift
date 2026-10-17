@@ -190,6 +190,11 @@ private struct UtilityGrid: View {
             .onChange(of: store.isPanelOpen) { _, isOpen in
                 if !isOpen { proxy.scrollTo(Self.topID, anchor: .top) }
             }
+            // A tile just added comes into view as it fades in.
+            .onChange(of: store.highlightedUtilityID) { _, id in
+                guard let id else { return }
+                withAnimation(.smooth(duration: 0.4)) { proxy.scrollTo(id) }
+            }
         }
     }
 
@@ -270,6 +275,16 @@ private struct UtilityGrid: View {
         // Tiles being added or removed fade while the grid makes or closes
         // their space; so do the section's while it opens or closes.
         .opacity(store.fadingUtilityIDs.contains(utility.id) || (isInMore && isMoreTileHidden) ? 0 : 1)
+        // Just added: a ring glows around it for a moment.
+        .overlay {
+            RoundedRectangle(cornerRadius: 23, style: .continuous)
+                .strokeBorder(.tint, lineWidth: 2.5)
+                .shadow(color: .accentColor.opacity(0.8), radius: 6)
+                .padding(-3)
+                .opacity(store.highlightedUtilityID == utility.id ? 1 : 0)
+                .allowsHitTesting(false)
+        }
+        .id(utility.id)
         .anchorPreference(key: MoreSectionBounds.self, value: .bounds) { isInMore && store.isLibraryExpanded ? [$0] : [] }
         .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { frame in
             tileFrames.rects[utility.id] = frame

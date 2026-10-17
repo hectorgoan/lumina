@@ -5,7 +5,6 @@ import SwiftUI
 struct BatteryWidgetSettings: View {
     @Environment(UtilityStore.self) private var store
     let widgetID: String
-    private let monitor = BatteryMonitor.shared
 
     var body: some View {
         if let widget = store.batteryWidget(withID: widgetID) {
@@ -45,19 +44,31 @@ struct BatteryWidgetSettings: View {
                 options: BatteryWidget.Size.allCases.map { ($0.shortTitle, $0) },
                 selection: Binding(
                     get: { widget.size },
-                    set: { newSize in
-                        var updated = widget
-                        updated.size = newSize
-                        // Keep only as many chosen devices as the new size shows.
-                        updated.chosenDevices = Array(widget.chosenDevices.prefix(newSize.capacity))
-                        update(updated)
-                    }
+                    set: { update(widget.resized(to: $0)) }
                 )
             )
             .accessibilityLabel("Size")
 
             Divider()
 
+            BatteryDeviceChooser(widget: widget, update: { update($0) })
+        }
+    }
+
+    private func update(_ widget: BatteryWidget) {
+        store.updateBatteryWidget(widget)
+    }
+}
+
+/// Which devices a widget shows: the lowest charged automatically, or ones
+/// chosen from the list. Used in a widget's settings and on the add page.
+struct BatteryDeviceChooser: View {
+    let widget: BatteryWidget
+    let update: (BatteryWidget) -> Void
+    private let monitor = BatteryMonitor.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
             Toggle("Choose Automatically", isOn: Binding(
                 get: { widget.choosesAutomatically },
                 set: { automatic in
@@ -157,7 +168,4 @@ struct BatteryWidgetSettings: View {
         update(updated)
     }
 
-    private func update(_ widget: BatteryWidget) {
-        store.updateBatteryWidget(widget)
-    }
 }

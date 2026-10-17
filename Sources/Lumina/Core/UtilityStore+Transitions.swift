@@ -34,6 +34,7 @@ extension UtilityStore {
                     self.isPageVisible = true
                     if let added { self.fadingUtilityIDs.remove(added) }
                 }
+                if let added { self.highlight(added) }
                 self.isTransitioning = false
             }
         }
@@ -150,7 +151,19 @@ extension UtilityStore {
             fadingUtilityIDs.insert(added)
         } completion: {
             withAnimation(Motion.present) { _ = self.fadingUtilityIDs.remove(added) }
+            self.highlight(added)
             self.isTransitioning = false
+        }
+    }
+
+    /// Marks a tile just added: the grid scrolls to it as it fades in, a
+    /// ring glows around it, and fades away after a moment.
+    func highlight(_ id: String) {
+        withAnimation(Motion.present) { highlightedUtilityID = id }
+        Task {
+            try? await Task.sleep(for: .seconds(1.2))
+            guard highlightedUtilityID == id else { return }
+            withAnimation(.easeOut(duration: 0.8)) { highlightedUtilityID = nil }
         }
     }
 

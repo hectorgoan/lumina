@@ -94,6 +94,10 @@ final class UtilityStore {
     /// Tiles kept invisible while they're added to or removed from the grid.
     var fadingUtilityIDs: Set<String> = []
 
+    /// A tile just added: the grid scrolls to it and it glows for a moment,
+    /// so it doesn't get lost.
+    var highlightedUtilityID: String?
+
     /// Whether a page or tile transition is under way.
     @ObservationIgnored var isTransitioning = false
 
@@ -119,11 +123,9 @@ final class UtilityStore {
     /// Whether the menu bar panel is open.
     var isPanelOpen = false
 
-    /// The size chosen on the battery widget add page.
-    var newBatteryWidgetSize: BatteryWidget.Size = .large
-
-    /// The name typed on the battery widget add page.
-    var newBatteryWidgetName = ""
+    /// The widget being set up on the battery widget add page: its size,
+    /// name and devices.
+    var newBatteryWidget = BatteryWidget(id: "new", size: .large)
 
     /// The city highlighted on the world clock add page.
     var previewCityCode: String?
@@ -276,14 +278,28 @@ final class UtilityStore {
     /// Adds a battery widget of the given size after the visible utilities
     /// and closes the picker.
     @discardableResult
-    func addBatteryWidget(size: BatteryWidget.Size, name: String? = nil) -> String {
-        var widget = BatteryWidget(id: "batteries-\(UUID().uuidString)", size: size)
-        widget.name = name
-        newBatteryWidgetName = ""
+    func addBatteryWidget(size: BatteryWidget.Size) -> String {
+        addBatteryWidget(BatteryWidget(id: "new", size: size))
+    }
+
+    /// Adds a battery widget set up like `draft` (the add page's) after the
+    /// visible utilities, closes the picker and starts a fresh draft.
+    @discardableResult
+    func addBatteryWidget(_ draft: BatteryWidget) -> String {
+        let widget = BatteryWidget(
+            id: "batteries-\(UUID().uuidString)", size: draft.size, name: draft.title,
+            choosesAutomatically: draft.choosesAutomatically, chosenDevices: draft.chosenDevices
+        )
+        resetNewBatteryWidget()
         batteryWidgets.append(widget)
         insertVisible(Utility.batteryWidget(widget))
         isAddingBatteryWidget = false
         return widget.id
+    }
+
+    /// Starts the add page over, keeping the size last picked.
+    func resetNewBatteryWidget() {
+        newBatteryWidget = BatteryWidget(id: "new", size: newBatteryWidget.size)
     }
 
     func batteryWidget(withID id: String) -> BatteryWidget? {
